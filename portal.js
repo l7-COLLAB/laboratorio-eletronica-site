@@ -98,7 +98,7 @@ function moduleCard(module) {
   });
   label.append(checkbox, "Marcar como revisado");
   card.append(element("p", module.id + " / " + module.category, "meta"),
-    element("h3", module.name), element("p", module.summary), links, label);
+    element("h3", module.name), element("p", module.summary), links, label, noteEditor(module.category));
   return card;
 }
 
@@ -129,7 +129,7 @@ function projectCard(project) {
       project.url || catalogo.notion.projects));
   }
   card.append(element("p", project.category + " / " + project.status, "meta"),
-    element("h3", project.title), element("p", project.goal), details, links);
+    element("h3", project.title), element("p", project.goal), details, links, noteEditor(project.category));
   return card;
 }
 
@@ -254,7 +254,8 @@ function semesterCard(semester) {
     list.append(item);
   }
   card.append(element("summary", semester.number + "º semestre · " + semester.name), list,
-    element("p", "Projeto integrador (40 h) · " + semester.project));
+    element("p", "Projeto integrador (40 h) · " + semester.project),
+    noteEditor(stageCategory("S" + String(semester.number).padStart(2, "0"))));
   return card;
 }
 
@@ -280,6 +281,11 @@ function showView(fragment) {
     else item.removeAttribute("aria-current");
   }
   if (fragment === "nivelamento") get("nivelamento").open = true;
+  if (id === "anotacoes") {
+    for (const note of get("lista-anotacoes").querySelectorAll(".note-editor")) {
+      note.open = Boolean(note.querySelector("textarea").value.trim());
+    }
+  }
 }
 
 function goToView(id) {

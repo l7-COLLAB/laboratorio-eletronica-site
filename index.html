@@ -6,11 +6,12 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Apostila, grade e projetos práticos de Engenharia Eletrônica e Microeletrônica.">
   <title>Laboratório de Eletrônica</title>
-  <link rel="stylesheet" href="estilos.css?v=menu-1">
+  <link rel="stylesheet" href="estilos.css?v=notas-1">
   <script defer src="catalogo.js"></script>
-  <script defer src="portal.js?v=menu-1"></script>
+  <script defer src="anotacoes.js?v=notas-1"></script>
+  <script defer src="portal.js?v=notas-1"></script>
   <script defer src="trilha-dados.js"></script>
-  <script defer src="trilha.js?v=menu-1"></script>
+  <script defer src="trilha.js?v=notas-1"></script>
 </head>
 <body>
   <a class="skip" href="#conteudo">Ir ao conteúdo</a>
@@ -23,6 +24,7 @@
         <a class="button" href="#revisao">Revisão</a>
         <a class="button" href="#projetos">Projetos</a>
         <a class="button" href="#grade">Grade</a>
+        <a class="button" href="#anotacoes">Anotações</a>
       </nav>
     </div>
   </header>
@@ -91,6 +93,14 @@
       </div>
       <div class="semesters" id="semestres"></div>
     </section>
+    <section id="anotacoes" data-view aria-labelledby="anotacoes-titulo" hidden>
+      <div class="section-head">
+        <div><h1 id="anotacoes-titulo">Anotações</h1><p>Seu caderno, separado por categoria.</p></div>
+      </div>
+      <p class="study-note">As notas são salvas automaticamente neste navegador. Os blocos da mesma categoria compartilham a mesma anotação.</p>
+      <div id="lista-anotacoes"></div>
+    </section>
+  </main>
   <footer class="wrap">Laboratório de Eletrônica <span>Estudo independente · Microeletrônica</span></footer>
   <noscript>Ative o JavaScript para abrir o catálogo e registrar o progresso neste navegador.</noscript>
 </body>

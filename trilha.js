@@ -282,7 +282,8 @@
     practice.append(label, reveal, resolution, checkLabel);
     const activity = get("atividade");
     activity.replaceChildren(status, title, element("p", stage.goal), theory,
-      block("Curiosidade aplicada", stage.curiosity), practice, quiz, announcement, result, onward);
+      block("Curiosidade aplicada", stage.curiosity), practice, quiz, announcement, result, onward,
+      noteEditor(stageCategory(stage.id)));
     const module = catalogo.modules.find(item => item.id === stage.id);
     const url = module?.url ?? catalogo.notion?.master;
     if (url) activity.append(link(module ? "Aprofundar na apostila ↗" : "Consultar a grade no Plano Mestre ↗", url));

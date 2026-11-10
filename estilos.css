@@ -146,3 +146,9 @@ main > section { padding-top: 1.25rem; }
   .stage-list { grid-template-columns: minmax(0, 1fr); }
   .menu .button { padding-inline: .55rem; }
 }
+.note-editor { border: 1px solid var(--line); border-radius: .6rem; padding: .75rem; margin-top: .75rem; background: var(--panel); }
+.note-editor > summary { min-height: 32px; align-content: center; font-weight: 650; }
+.note-editor > label { display: block; margin-top: .6rem; color: var(--soft); font-size: .9rem; }
+.note-editor textarea { display: block; box-sizing: border-box; width: 100%; min-height: 130px; margin-top: .35rem; padding: .6rem; background: var(--bg); color: var(--text); border: 1px solid var(--line); border-radius: .4rem; resize: vertical; font: 1rem/1.5 system-ui, sans-serif; }
+.note-status { color: var(--soft); font-size: .85rem; margin-top: .4rem; }
+.note-status:empty { display: none; }
