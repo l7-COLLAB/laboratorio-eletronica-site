@@ -15,6 +15,7 @@ function readLocal(key, fallback) {
 function saveLocal(key, value) {
   try {
     localStorage.setItem(key, JSON.stringify(value));
+    window.cloudSync?.queue(key, JSON.stringify(value));
     return true;
   } catch {
     return false;
@@ -307,3 +308,12 @@ for (const item of document.querySelectorAll(".menu a, .brand")) {
 window.addEventListener("hashchange", () => showView(location.hash.slice(1)));
 for (const view of views) view.querySelector("h1").tabIndex = -1;
 showView(location.hash.slice(1));
+
+window.addEventListener("cloud:applied", event => {
+  if (!event.detail.keys.includes(reviewedKey)) return;
+  reviewed.clear();
+  const updated = readLocal(reviewedKey, []);
+  for (const id of Array.isArray(updated) ? updated : []) if (moduleIds.has(id)) reviewed.add(id);
+  updateProgress();
+  renderModules();
+});

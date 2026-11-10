@@ -6,12 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Apostila, grade e projetos práticos de Engenharia Eletrônica e Microeletrônica.">
   <title>Laboratório de Eletrônica</title>
-  <link rel="stylesheet" href="estilos.css?v=notas-1">
+  <link rel="stylesheet" href="estilos.css?v=nuvem-1">
   <script defer src="catalogo.js"></script>
-  <script defer src="anotacoes.js?v=notas-1"></script>
-  <script defer src="portal.js?v=notas-1"></script>
+  <script defer src="anotacoes.js?v=nuvem-1"></script>
+  <script defer src="nuvem.js?v=nuvem-1"></script>
+  <script defer src="portal.js?v=nuvem-1"></script>
   <script defer src="trilha-dados.js"></script>
-  <script defer src="trilha.js?v=notas-1"></script>
+  <script defer src="trilha.js?v=nuvem-1"></script>
 </head>
 <body>
   <a class="skip" href="#conteudo">Ir ao conteúdo</a>
@@ -25,8 +26,10 @@
         <a class="button" href="#projetos">Projetos</a>
         <a class="button" href="#grade">Grade</a>
         <a class="button" href="#anotacoes">Anotações</a>
+        <a class="button" href="#nuvem">Nuvem</a>
       </nav>
     </div>
+    <div class="wrap"><a id="nuvem-indicador" class="cloud-indicator" href="#nuvem">Ativar salvamento na nuvem</a></div>
   </header>
   <main class="wrap" id="conteudo" tabindex="-1">
     <section id="trilha" data-view aria-labelledby="trilha-titulo">
@@ -108,8 +111,34 @@
       <div class="section-head">
         <div><h1 id="anotacoes-titulo">Anotações</h1><p>Seu caderno, separado por categoria.</p></div>
       </div>
-      <p class="study-note">As notas são salvas automaticamente neste navegador. Os blocos da mesma categoria compartilham a mesma anotação.</p>
+      <p class="study-note">As notas ficam neste aparelho e, quando conectado, são enviadas à nuvem. Consulte o estado da sincronização no topo. Os blocos da mesma categoria compartilham a mesma anotação.</p>
       <div id="lista-anotacoes"></div>
+    </section>
+    <section id="nuvem" data-view aria-labelledby="nuvem-titulo" hidden>
+      <div class="section-head"><div><h1 id="nuvem-titulo">Seus estudos na nuvem</h1><p>Recupere as anotações e os avanços em outro aparelho usando seu código pessoal.</p></div></div>
+      <p id="nuvem-status" class="cloud-summary" role="status"></p>
+      <form id="nuvem-formulario" class="cloud-form">
+        <label>Código pessoal de acesso<input id="nuvem-codigo" type="password" autocomplete="off" spellcheck="false" required placeholder="Cole seu código pessoal"></label>
+        <button id="nuvem-conectar" class="button primary" type="submit">Conectar este aparelho</button>
+      </form>
+      <div id="nuvem-conectado" class="import" hidden>
+        <p>As alterações são enviadas automaticamente. Sem conexão, ficam aguardando envio neste aparelho.</p>
+        <button id="nuvem-sincronizar" class="button" type="button">Sincronizar agora</button>
+        <details>
+          <summary>Recuperar em outro aparelho</summary>
+          <p>Guarde seu código em local seguro. Ele permite acessar e editar seus estudos. No outro aparelho, abra este site e cole o mesmo código em Nuvem.</p>
+          <button id="nuvem-mostrar" class="button" type="button">Mostrar ou ocultar meu código</button>
+          <input id="nuvem-codigo-atual" type="text" readonly hidden aria-label="Seu código pessoal para guardar" spellcheck="false">
+        </details>
+      </div>
+      <div id="nuvem-conflitos"></div>
+      <details class="import">
+        <summary>Recuperar uma anotação anterior</summary>
+        <p>O histórico guarda até 20 versões anteriores por categoria. As dez mais recentes aparecem aqui.</p>
+        <label>Categoria<select id="nuvem-historico-categoria"></select></label>
+        <button id="nuvem-historico-abrir" class="button" type="button">Consultar histórico</button>
+        <div id="nuvem-historico-lista"></div>
+      </details>
     </section>
   </main>
   <footer class="wrap">Laboratório de Eletrônica <span>Estudo independente · Microeletrônica</span></footer>

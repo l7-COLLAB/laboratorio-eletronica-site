@@ -339,6 +339,24 @@
     }
   });
 
+  window.addEventListener("cloud:applied", event => {
+    if (!event.detail.keys.includes(key)) return;
+    const saved = readLocal(key, {});
+    progress.passed = Array.isArray(saved.passed) ? saved.passed : [];
+    progress.reviews = saved.reviews ?? {};
+    progress.attempts = saved.attempts ?? {};
+    progress.minutes = [10, 15, 20].includes(saved.minutes) ? saved.minutes : 15;
+    progress.lastGoal = saved.lastGoal ?? null;
+    const hasDraft = Boolean(get("atividade").querySelector("textarea")?.value.trim());
+    if (selected > firstOpen()) selected = Math.min(firstOpen(), etapas.length - 1);
+    if (!hasDraft) renderActivity();
+    get("tempo-meta").value = String(progress.minutes);
+    updateStatus();
+    updateGoal();
+    renderOutline();
+    renderReviews();
+  });
+
   get("tempo-meta").value = String(progress.minutes);
   get("tempo-meta").addEventListener("change", event => {
     progress.minutes = Number(event.currentTarget.value);

@@ -46,6 +46,7 @@ function noteEditor(category) {
   const label = element("label", "Suas anotações de " + category);
   const field = element("textarea");
   field.rows = 5;
+  field.maxLength = 20000;
   field.value = readNote(category);
   field.placeholder = "Escreva suas dúvidas, cálculos ou o que aprendeu…";
   const status = element("p", "", "note-status");
@@ -60,6 +61,7 @@ function noteEditor(category) {
     } catch {
       noteDrafts.set(category, value);
     }
+    window.cloudSync?.queue(noteKey(category), value);
     syncNote(category, value, saved, field);
   });
   label.append(field);
@@ -82,4 +84,12 @@ document.addEventListener("DOMContentLoaded", () => {
     editor.open = Boolean(readNote(category).trim());
     return editor;
   }));
+});
+
+window.addEventListener("cloud:applied", event => {
+  for (const category of noteCategories) {
+    if (!event.detail.keys.includes(noteKey(category))) continue;
+    noteDrafts.delete(category);
+    syncNote(category, readNote(category), true);
+  }
 });
