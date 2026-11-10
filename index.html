@@ -6,13 +6,13 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Apostila, grade e projetos práticos de Engenharia Eletrônica e Microeletrônica.">
   <title>Laboratório de Eletrônica</title>
-  <link rel="stylesheet" href="estilos.css?v=nuvem-2">
+  <link rel="stylesheet" href="estilos.css?v=login-1">
   <script defer src="catalogo.js"></script>
-  <script defer src="anotacoes.js?v=nuvem-2"></script>
-  <script defer src="nuvem.js?v=nuvem-2"></script>
-  <script defer src="portal.js?v=nuvem-2"></script>
+  <script defer src="anotacoes.js?v=login-1"></script>
+  <script defer src="nuvem.js?v=login-1"></script>
+  <script defer src="portal.js?v=login-1"></script>
   <script defer src="trilha-dados.js"></script>
-  <script defer src="trilha.js?v=nuvem-2"></script>
+  <script defer src="trilha.js?v=login-1"></script>
 </head>
 <body>
   <a class="skip" href="#conteudo">Ir ao conteúdo</a>
@@ -29,7 +29,7 @@
         <a class="button" href="#nuvem">Nuvem</a>
       </nav>
     </div>
-    <div class="wrap"><a id="nuvem-indicador" class="cloud-indicator" href="#nuvem">Ativar salvamento na nuvem</a></div>
+    <div class="wrap"><a id="nuvem-indicador" class="cloud-indicator" href="#nuvem">Entrar para salvar na nuvem</a></div>
   </header>
   <main class="wrap" id="conteudo" tabindex="-1">
     <section id="trilha" data-view aria-labelledby="trilha-titulo">
@@ -115,21 +115,36 @@
       <div id="lista-anotacoes"></div>
     </section>
     <section id="nuvem" data-view aria-labelledby="nuvem-titulo" hidden>
-      <div class="section-head"><div><h1 id="nuvem-titulo">Seus estudos na nuvem</h1><p>Recupere as anotações e os avanços em outro aparelho usando seu código pessoal.</p></div></div>
+      <div class="section-head"><div><h1 id="nuvem-titulo">Seus estudos na nuvem</h1><p>Entre com seu nome de usuário e senha para recuperar seus estudos neste aparelho.</p></div></div>
       <p id="nuvem-status" class="cloud-summary" role="status"></p>
-      <form id="nuvem-formulario" class="cloud-form">
-        <label>Código pessoal de acesso<input id="nuvem-codigo" type="password" autocomplete="off" spellcheck="false" required placeholder="Cole seu código pessoal"></label>
-        <button id="nuvem-conectar" class="button primary" type="submit">Conectar este aparelho</button>
-      </form>
-      <div id="nuvem-conectado" class="import" hidden>
-        <p>As alterações são enviadas automaticamente. Sem conexão, ficam aguardando envio neste aparelho.</p>
-        <button id="nuvem-sincronizar" class="button" type="button">Sincronizar agora</button>
-        <details>
-          <summary>Recuperar em outro aparelho</summary>
-          <p>Guarde seu código em local seguro. Ele permite acessar e editar seus estudos. No outro aparelho, abra este site e cole o mesmo código em Nuvem.</p>
-          <button id="nuvem-mostrar" class="button" type="button">Mostrar ou ocultar meu código</button>
-          <input id="nuvem-codigo-atual" type="text" readonly hidden aria-label="Seu código pessoal para guardar" spellcheck="false">
+      <div id="nuvem-acesso">
+        <form id="nuvem-login" class="cloud-form">
+          <label>Nome de usuário<input name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" minlength="3" maxlength="32" pattern="[a-zA-Z0-9._-]{3,32}" required></label>
+          <label>Senha<input name="password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required></label>
+          <button class="button primary" type="submit">Entrar</button>
+        </form>
+        <form id="nuvem-criar" class="cloud-form" hidden>
+          <h2>Primeiro acesso</h2>
+          <p>Escolha um nome de usuário e uma senha fácil de lembrar, com pelo menos 8 caracteres.</p>
+          <label>Nome de usuário<input name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" minlength="3" maxlength="32" pattern="[a-zA-Z0-9._-]{3,32}" required></label>
+          <small>Use letras sem acentos, números, ponto, hífen ou sublinhado.</small>
+          <label>Senha<input name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required></label>
+          <label>Repita a senha<input name="confirm" type="password" autocomplete="new-password" minlength="8" maxlength="128" required></label>
+          <button class="button primary" type="submit">Criar meu acesso</button>
+        </form>
+        <details id="nuvem-recuperar" class="import">
+          <summary>Usar o código de recuperação</summary>
+          <form id="nuvem-formulario" class="cloud-form">
+            <label>Código de recuperação<input id="nuvem-codigo" type="password" autocomplete="off" spellcheck="false" required placeholder="Cole seu código de recuperação"></label>
+            <button id="nuvem-conectar" class="button" type="submit">Recuperar acesso</button>
+          </form>
         </details>
+      </div>
+      <div id="nuvem-conectado" class="import" hidden>
+        <p>As alterações são enviadas automaticamente. Este navegador mantém seu acesso para as próximas visitas.</p>
+        <button id="nuvem-sincronizar" class="button" type="button">Sincronizar agora</button>
+        <button id="nuvem-sair" class="button" type="button">Sair deste aparelho</button>
+        <p>Em outro aparelho, entre com o mesmo nome de usuário e senha.</p>
       </div>
       <div id="nuvem-conflitos"></div>
       <details class="import">

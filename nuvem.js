@@ -3,6 +3,8 @@
 window.cloudSync = (() => {
   const endpoint = "https://laboratorio-eletronica-sync.l7526080.workers.dev";
   const prefix = "laboratorio-eletronica:";
+  let setupTicket = new URLSearchParams(location.hash.slice(1)).get("configurar");
+  if (setupTicket) window.history.replaceState(null, "", "#nuvem");
   const authKey = prefix + "nuvem:codigo:v1";
   const metaKey = prefix + "nuvem:estado:v1";
   const supported = new Set([
@@ -42,16 +44,16 @@ window.cloudSync = (() => {
     const label = get("nuvem-status");
     if (label) label.textContent = text;
     const indicator = get("nuvem-indicador");
-    if (indicator) indicator.textContent = token ? text : "Ativar salvamento na nuvem";
+    if (indicator) indicator.textContent = token ? text : "Entrar para salvar na nuvem";
   }
 
   function idleStatus() {
     const conflicts = Object.keys(state.conflicts).length;
     const count = Object.keys(state.pending).length;
-    if (!token) return status("Cole seu código pessoal para conectar este aparelho.");
+    if (!token) return status("Entre com seu usuário e senha para salvar os estudos na nuvem.");
     if (conflicts) return status("Há edições diferentes para conferir antes de sincronizar.");
     if (count) return status("Alterações salvas neste aparelho, aguardando envio.");
-    status(persisted ? "Tudo sincronizado com a nuvem." : "Salvo na nuvem. Guarde seu código para recuperar o acesso.");
+    status(persisted ? "Tudo sincronizado com a nuvem." : "Salvo na nuvem. Entre novamente se este navegador perder o acesso.");
   }
 
   function labelFor(key) {
@@ -99,7 +101,16 @@ window.cloudSync = (() => {
       signal: AbortSignal.timeout(15000),
     });
     const result = await response.json();
-    if (response.status === 401) throw new Error("Código inválido. Confira e conecte novamente.");
+    if (response.status === 401) {
+      if (code === token && !path.startsWith("/auth/")) {
+        token = "";
+        try { localStorage.removeItem(authKey); } catch {}
+        updateConnectionUI();
+      }
+      const error = new Error(result.error || "Entre novamente para conectar este aparelho.");
+      error.status = 401;
+      throw error;
+    }
     if (response.status === 409) return {conflict: true, ...result};
     if (!response.ok) {
       const error = new Error(result.error || "A nuvem não respondeu. Tentaremos novamente.");
@@ -207,7 +218,7 @@ window.cloudSync = (() => {
         retryTimer = setTimeout(sync, 1500);
       }
     } catch (error) {
-      const permanent = error.message.includes("Código inválido") || [400, 413, 507].includes(error.status);
+      const permanent = [400, 401, 403, 413, 429, 507].includes(error.status);
       status(permanent ? error.message :
         "Sem conexão com a nuvem. Seus dados continuam neste aparelho e serão reenviados.");
       if (!permanent) retryTimer = setTimeout(sync, 20000);
@@ -261,28 +272,92 @@ window.cloudSync = (() => {
     }));
   }
 
+  function updateConnectionUI() {
+    get("nuvem-conectado").hidden = !token;
+    get("nuvem-acesso").hidden = Boolean(token) && !setupTicket;
+    get("nuvem-criar").hidden = !setupTicket;
+    get("nuvem-login").hidden = Boolean(setupTicket);
+    get("nuvem-recuperar").hidden = Boolean(setupTicket);
+  }
+
+  async function adoptSession(value) {
+    token = value;
+    try {
+      localStorage.setItem(authKey, value);
+    } catch {
+      persisted = false;
+    }
+    get("nuvem-acesso").hidden = true;
+    get("nuvem-conectado").hidden = false;
+    await sync();
+  }
+
   async function connect(event) {
     event.preventDefault();
     const field = get("nuvem-codigo");
     const code = field.value.trim();
-    if (!/^[A-Za-z0-9_-]{43}$/.test(code)) return status("Cole o código pessoal completo.");
+    if (!/^[A-Za-z0-9_-]{43}$/.test(code)) return status("Cole o código de recuperação completo.");
     const button = get("nuvem-conectar");
     button.disabled = true;
     try {
       await request("/state", {}, code);
-      try {
-        localStorage.setItem(authKey, code);
-      } catch {
-        persisted = false;
-      }
-      token = code;
       field.value = "";
-      get("nuvem-conectado").hidden = false;
-      await sync();
+      await adoptSession(code);
     } catch (error) {
       status(error.message);
     } finally {
       button.disabled = false;
+    }
+  }
+
+  async function passwordSignIn(event) {
+    event.preventDefault();
+    const creating = event.currentTarget.id === "nuvem-criar";
+    const form = event.currentTarget;
+    const username = form.querySelector('[name="username"]').value.trim();
+    const password = form.querySelector('[name="password"]').value;
+    if (creating && password !== form.querySelector('[name="confirm"]').value) {
+      return status("As duas senhas precisam ser iguais.");
+    }
+    const submit = form.querySelector('button[type="submit"]');
+    submit.disabled = true;
+    status(creating ? "Criando seu acesso…" : "Entrando…");
+    try {
+      const result = await request(creating ? "/auth/setup" : "/auth/login", {
+        method: "POST",
+        headers: {"Content-Type": "application/json"},
+        body: JSON.stringify({username, password, ...(creating ? {ticket: setupTicket} : {})}),
+      });
+      form.reset();
+      if (creating) setupTicket = null;
+      await adoptSession(result.token);
+    } catch (error) {
+      status(error.message);
+      if (creating && [403, 409].includes(error.status)) {
+        get("nuvem-login").hidden = false;
+        get("nuvem-recuperar").hidden = false;
+        get("nuvem-criar").hidden = true;
+      }
+    } finally {
+      submit.disabled = false;
+    }
+  }
+
+  async function signOut() {
+    await sync();
+    if (Object.keys(state.pending).length) return status("Conclua a sincronização das alterações antes de sair.");
+    try {
+      await request("/auth/logout", {method: "POST"});
+      token = "";
+      localStorage.removeItem(authKey);
+      get("nuvem-acesso").hidden = false;
+      get("nuvem-criar").hidden = true;
+      get("nuvem-login").hidden = false;
+      get("nuvem-recuperar").hidden = false;
+      get("nuvem-conectado").hidden = true;
+      idleStatus();
+    } catch (error) {
+      status(error.message);
     }
   }
 
@@ -323,28 +398,36 @@ window.cloudSync = (() => {
   document.addEventListener("DOMContentLoaded", () => {
     get("nuvem-formulario").addEventListener("submit", connect);
     get("nuvem-sincronizar").addEventListener("click", sync);
-    get("nuvem-mostrar").addEventListener("click", () => {
-      const field = get("nuvem-codigo-atual");
-      field.value = token;
-      field.hidden = !field.hidden;
-    });
+    get("nuvem-login").addEventListener("submit", passwordSignIn);
+    get("nuvem-criar").addEventListener("submit", passwordSignIn);
+    get("nuvem-sair").addEventListener("click", signOut);
     get("nuvem-historico-categoria").append(...noteCategories.map(category =>
       new Option(category, noteKey(category))));
     get("nuvem-historico-abrir").addEventListener("click", history);
-    get("nuvem-conectado").hidden = !token;
+    updateConnectionUI();
     renderConflicts();
     if (token) sync();
     else idleStatus();
+  });
+  window.addEventListener("hashchange", () => {
+    const invitation = new URLSearchParams(location.hash.slice(1)).get("configurar");
+    if (!invitation) return;
+    setupTicket = invitation;
+    window.history.replaceState(null, "", "#nuvem");
+    showView("nuvem");
+    updateConnectionUI();
+    status("Escolha seu nome de usuário e sua senha para conectar este aparelho.");
   });
   window.addEventListener("online", sync);
   document.addEventListener("visibilitychange", () => {
     if (document.visibilityState === "visible") sync();
   });
   window.addEventListener("storage", event => {
-    if (event.key === authKey && event.newValue) {
-      token = event.newValue;
-      get("nuvem-conectado").hidden = false;
-      sync();
+    if (event.key === authKey) {
+      token = event.newValue || "";
+      updateConnectionUI();
+      if (token) sync();
+      else idleStatus();
     }
     if (supported.has(event.key)) {
       try {
