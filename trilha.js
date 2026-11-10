@@ -60,6 +60,7 @@
       return;
     }
     get("meta-link").href = review ? "#revisao" : "#atividade";
+    get("meta-link").textContent = review ? "Fazer revisão" : "Começar atividade";
     if (review) {
       get("meta-dia").textContent = "Revisar de memória · " + review.stage.id;
       get("meta-passos").textContent = "Tente responder à primeira revisão disponível sem consultar a aula. Depois compare e registre o resultado.";
@@ -76,6 +77,8 @@
 
   function switchStage(index) {
     if (index > firstOpen() || index >= etapas.length) return;
+    goToView("trilha");
+    get("acesso-etapa").textContent = "";
     selected = index;
     attempt = 0;
     renderOutline();
@@ -86,17 +89,25 @@
   function renderOutline() {
     const outline = get("mapa-trilha");
     const nodes = [];
+    let group;
     etapas.forEach((stage, index) => {
-      if (index === 0) nodes.push(element("h3", "NIVELAMENTO"));
-      if (stage.id === "S01") nodes.push(element("h3", "DESAFIOS DOS SEMESTRES"));
+      if (index === 0 || stage.id === "S01") {
+        const section = element("section", "", "stage-group");
+        group = element("div", "", "stage-list");
+        section.append(element("h2", index === 0 ? "Nivelamento" : "Desafios dos semestres"), group);
+        nodes.push(section);
+      }
       const passed = index < firstOpen();
-      const button = element("button", stage.id + " · " + stageTitle(stage), "stage-choice");
+      const button = element("button", "", "stage-choice");
+      const name = element("span", stageTitle(stage), "stage-name");
+      name.prepend(element("span", stage.id, "stage-code"), " ");
+      button.append(name);
       button.type = "button";
       button.disabled = index > firstOpen();
       if (index === selected) button.setAttribute("aria-current", "step");
       button.append(element("small", passed ? "Concluída" : button.disabled ? "Bloqueada" : "Disponível"));
       button.addEventListener("click", () => switchStage(index));
-      nodes.push(button);
+      group.append(button);
     });
     outline.replaceChildren(...nodes);
   }
@@ -335,7 +346,7 @@
   });
   get("meta-link").addEventListener("click", () => {
     if (get("meta-link").hash === "#revisao") {
-      get("revisao").open = true;
+      goToView("revisao");
       get("lista-revisao").querySelector("details")?.setAttribute("open", "");
     } else if (firstOpen() < etapas.length) {
       switchStage(firstOpen());

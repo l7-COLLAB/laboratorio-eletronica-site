@@ -72,8 +72,6 @@ if (catalogo.notion) {
   get("gabarito").href = catalogo.notion.answers;
   get("base").href = catalogo.notion.projects;
 }
-setModuleLink(get("fatoracao"), "M03");
-setModuleLink(get("trigonometria"), "M06");
 
 function updateProgress() {
   get("progresso").textContent = reviewed.size + " de " + moduleIds.size + " revisados";
@@ -269,3 +267,37 @@ get("semestres").append(...catalogo.semesters.map(semesterCard));
 updateProgress();
 renderModules();
 updateProjectFilters();
+
+const views = [...document.querySelectorAll("[data-view]")];
+const menu = [...document.querySelectorAll(".menu a")];
+
+function showView(fragment) {
+  const id = fragment === "nivelamento" ? "etapas"
+    : views.some(view => view.id === fragment) ? fragment : "trilha";
+  for (const view of views) view.hidden = view.id !== id;
+  for (const item of menu) {
+    if (item.hash === "#" + id) item.setAttribute("aria-current", "page");
+    else item.removeAttribute("aria-current");
+  }
+  if (fragment === "nivelamento") get("nivelamento").open = true;
+}
+
+function goToView(id) {
+  if (location.hash !== "#" + id) history.pushState(null, "", "#" + id);
+  showView(id);
+}
+
+for (const item of document.querySelectorAll(".menu a, .brand")) {
+  item.addEventListener("click", event => {
+    if (event.button !== 0 || event.metaKey || event.ctrlKey || event.shiftKey || event.altKey) return;
+    event.preventDefault();
+    const id = item.hash.slice(1);
+    goToView(id);
+    window.scrollTo(0, 0);
+    get(id).querySelector("h1").focus({ preventScroll: true });
+  });
+}
+
+window.addEventListener("hashchange", () => showView(location.hash.slice(1)));
+for (const view of views) view.querySelector("h1").tabIndex = -1;
+showView(location.hash.slice(1));

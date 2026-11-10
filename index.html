@@ -16,78 +16,81 @@
   <a class="skip" href="#conteudo">Ir ao conteúdo</a>
   <header class="top">
     <div class="wrap top-inner">
-      <a class="brand" href="#inicio"><span aria-hidden="true">∿</span> Laboratório de Eletrônica</a>
-      <nav aria-label="Seções">
-        <a href="#trilha">Trilha</a><a href="#nivelamento">Apostila</a><a href="#projetos">Projetos</a><a href="#grade">Grade</a>
+      <a class="brand" href="#trilha"><span aria-hidden="true">∿</span> Laboratório de Eletrônica</a>
+      <nav class="menu" aria-label="Menu principal">
+        <a class="button" href="#trilha">Estudar</a>
+        <a class="button" href="#etapas">Etapas</a>
+        <a class="button" href="#revisao">Revisão</a>
+        <a class="button" href="#projetos">Projetos</a>
+        <a class="button" href="#grade">Grade</a>
       </nav>
     </div>
   </header>
-  <main class="wrap" id="conteudo">
-    <section class="hero" id="inicio" aria-labelledby="titulo">
-      <div>
-        <p class="eyebrow">CADERNO DE ESTUDOS · 01</p>
-        <h1 id="titulo">Engenharia<br>Eletrônica<span>.</span></h1>
-        <p>Dos fundamentos de matemática aos circuitos integrados. Estude pela apostila, pratique com projetos e acompanhe seu percurso.</p>
-        <div class="actions"><a class="button primary" href="#trilha">Abrir trilha de estudos ↓</a><a class="button" href="#grade">Ver grade ↓</a></div>
-      </div>
-      <aside class="focus" aria-labelledby="foco">
-        <p class="eyebrow">PONTO DE PARTIDA</p>
-        <h2 id="foco">Fatoração e trigonometria</h2>
-        <p>Refaça um exemplo resolvido em cada módulo. Em seguida, tente a primeira atividade sem consultar o gabarito.</p>
-        <a id="fatoracao" target="_blank" rel="noopener"><b>M03</b> Equações quadráticas <span aria-hidden="true">↗</span></a>
-        <a id="trigonometria" target="_blank" rel="noopener"><b>M06</b> Seno, cosseno e vetores <span aria-hidden="true">↗</span></a>
-      </aside>
-    </section>
-    <section id="trilha" aria-labelledby="trilha-titulo">
+  <main class="wrap" id="conteudo" tabindex="-1">
+    <section id="trilha" data-view aria-labelledby="trilha-titulo">
       <div class="section-head">
-        <div><p class="eyebrow">TRILHA GUIADA</p><h2 id="trilha-titulo">Estude em etapas</h2><p>14 módulos de nivelamento e 10 desafios integradores, um por semestre do Plano Mestre.</p></div>
+        <div><h1 id="trilha-titulo">Estudar</h1><p id="estado-trilha" class="study-note"></p></div>
       </div>
       <div class="study-today">
-        <div><p class="eyebrow">META DO DIA</p><h3 id="meta-dia">Carregando…</h3><p id="meta-passos"></p><a id="meta-link" href="#atividade">Abrir atividade ↓</a></div>
-        <label>Tempo disponível<select id="tempo-meta"><option value="10">10 minutos</option><option value="15" selected>15 minutos</option><option value="20">20 minutos</option></select></label>
+        <div class="today-content">
+          <p class="eyebrow">META DO DIA</p>
+          <h2 id="meta-dia">Carregando…</h2>
+          <p id="meta-passos"></p>
+          <a class="button primary" id="meta-link" href="#atividade">Começar</a>
+        </div>
+        <details class="time-setting">
+          <summary>Tempo de estudo</summary>
+          <label>Tempo disponível<select id="tempo-meta"><option value="10">10 minutos</option><option value="15" selected>15 minutos</option><option value="20">20 minutos</option></select></label>
+        </details>
       </div>
-      <p id="estado-trilha" class="study-note"></p>
       <p id="acesso-etapa" class="study-note" role="status"></p>
-      <p class="study-note">O índice de módulos e a grade ficam disponíveis para consulta. Na trilha guiada, faça a prática, compare com a resolução e acerte as três questões para liberar a etapa seguinte.</p>
-      <div class="study-layout">
-        <details class="study-outline" open><summary>Mapa das etapas</summary><div id="mapa-trilha"></div></details>
-        <div id="atividade" class="study-activity"></div>
-      </div>
-      <details id="revisao" class="import"><summary>Revisão espaçada</summary><div id="lista-revisao"></div></details>
-      <details class="import"><summary>Como a trilha funciona</summary>
-        <p>O exemplo resolvido prepara a prática. Tente produzir a resposta antes de abrir a resolução. O gabarito comentado aparece após o envio das três respostas e fica disponível ao voltar à etapa, e as revisões pedem que você explique ou calcule de memória.</p>
-        <p>Os desafios dos semestres são amostras integradoras. A grade apresenta as 60 disciplinas do Plano Mestre, com estudos e práticas próprios.</p>
+      <div id="atividade" class="study-activity"></div>
+      <details class="import"><summary>Como avançar na trilha</summary>
+        <p>Leia o exemplo, faça a prática e acerte as três questões para liberar a próxima etapa. O gabarito comentado aparece após o envio das respostas.</p>
+        <p>Os 10 desafios dos semestres praticam uma habilidade de cada período. As 60 disciplinas estão descritas na grade.</p>
         <p><a href="https://www.cmu.edu/teaching/principles/learning.html" target="_blank" rel="noopener">Carnegie Mellon · Princípios de aprendizagem ↗</a> · <a href="https://www.cmu.edu/teaching/resources/instructionalstrategies/spacedopractice/index.html" target="_blank" rel="noopener">Carnegie Mellon · Prática espaçada ↗</a> · <a href="https://ies.ed.gov/ncee/wwc/PracticeGuide/1" target="_blank" rel="noopener">IES · Exemplos resolvidos e prática ↗</a></p>
       </details>
     </section>
-    <section id="nivelamento" aria-labelledby="nivelamento-titulo">
+    <section id="etapas" data-view aria-labelledby="etapas-titulo" hidden>
       <div class="section-head">
-        <div><p class="eyebrow">01 / FUNDAMENTOS</p><h2 id="nivelamento-titulo">Módulos de nivelamento</h2><p>Teoria, exemplo resolvido, prática e correção.</p></div>
+        <div><h1 id="etapas-titulo">Etapas</h1><p>Toque em uma etapa disponível para estudar ou rever o gabarito.</p></div>
       </div>
-      <div class="progress"><strong id="progresso" aria-live="polite">0 de 14 revisados</strong><progress aria-label="Módulos revisados neste navegador" id="barra" max="14" value="0"></progress><small>Marcações salvas neste navegador.</small></div>
-      <div class="filters">
-        <label>Buscar módulo<input type="search" id="buscar" placeholder="Ex.: trigonometria, M09"></label>
-        <label>Categoria<select id="modulo-categoria"><option value="">Todas</option></select></label>
-      </div>
-      <div class="cards" id="modulos"></div>
+      <div id="mapa-trilha"></div>
+      <details id="nivelamento" class="import">
+        <summary>Buscar no índice de nivelamento</summary>
+        <div class="progress"><strong id="progresso" aria-live="polite">0 de 14 revisados</strong><progress aria-label="Módulos revisados neste navegador" id="barra" max="14" value="0"></progress><small>Marcações salvas neste navegador.</small></div>
+        <div class="filters">
+          <label>Buscar módulo<input type="search" id="buscar" placeholder="Ex.: trigonometria, M09"></label>
+          <label>Categoria<select id="modulo-categoria"><option value="">Todas</option></select></label>
+        </div>
+        <div class="cards" id="modulos"></div>
+      </details>
     </section>
-    <section id="projetos" aria-labelledby="projetos-titulo">
+    <section id="revisao" data-view aria-labelledby="revisao-titulo" hidden>
       <div class="section-head">
-        <div><p class="eyebrow">02 / PRÁTICA</p><h2 id="projetos-titulo">Projetos de estudo</h2><p>Escolha um projeto e confira o que você precisa entregar.</p></div>
+        <div><h1 id="revisao-titulo">Revisão</h1><p>Tente responder de memória antes de conferir a solução.</p></div>
       </div>
-      <div class="filters">
-        <label>Categoria<select id="projeto-categoria"><option value="">Todas</option></select></label>
-        <label>Estado<select id="projeto-estado"><option value="">Todos</option></select></label>
+      <div id="lista-revisao" class="import"></div>
+    </section>
+    <section id="projetos" data-view aria-labelledby="projetos-titulo" hidden>
+      <div class="section-head">
+        <div><h1 id="projetos-titulo">Projetos</h1><p>Escolha um projeto para ver as etapas e a entrega.</p></div>
       </div>
+      <details class="project-filters">
+        <summary>Filtrar projetos</summary>
+        <div class="filters">
+          <label>Categoria<select id="projeto-categoria"><option value="">Todas</option></select></label>
+          <label>Estado<select id="projeto-estado"><option value="">Todos</option></select></label>
+        </div>
+      </details>
       <div class="cards" id="lista-projetos"></div>
     </section>
-    <section id="grade" aria-labelledby="grade-titulo">
+    <section id="grade" data-view aria-labelledby="grade-titulo" hidden>
       <div class="section-head">
-        <div><p class="eyebrow">03 / PERCURSO</p><h2 id="grade-titulo">Grade de formação</h2><p>10 semestres · 60 componentes · 4.000 horas propostas</p></div>
+        <div><h1 id="grade-titulo">Grade</h1><p>10 semestres · 60 componentes · 4.000 horas propostas</p></div>
       </div>
       <div class="semesters" id="semestres"></div>
     </section>
-  </main>
   <footer class="wrap">Laboratório de Eletrônica <span>Estudo independente · Microeletrônica</span></footer>
   <noscript>Ative o JavaScript para abrir o catálogo e registrar o progresso neste navegador.</noscript>
 </body>
