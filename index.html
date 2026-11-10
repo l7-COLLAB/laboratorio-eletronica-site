@@ -1,0 +1,94 @@
+<!doctype html>
+<html lang="pt-BR">
+<head>
+  <meta charset="utf-8">
+  <meta name="robots" content="noindex">
+  <meta name="viewport" content="width=device-width, initial-scale=1">
+  <meta name="description" content="Apostila, grade e projetos práticos de Engenharia Eletrônica e Microeletrônica.">
+  <title>Laboratório de Eletrônica</title>
+  <link rel="stylesheet" href="estilos.css">
+  <script defer src="catalogo.js"></script>
+  <script defer src="portal.js"></script>
+  <script defer src="trilha-dados.js"></script>
+  <script defer src="trilha.js"></script>
+</head>
+<body>
+  <a class="skip" href="#conteudo">Ir ao conteúdo</a>
+  <header class="top">
+    <div class="wrap top-inner">
+      <a class="brand" href="#inicio"><span aria-hidden="true">∿</span> Laboratório de Eletrônica</a>
+      <nav aria-label="Seções">
+        <a href="#trilha">Trilha</a><a href="#nivelamento">Apostila</a><a href="#projetos">Projetos</a><a href="#grade">Grade</a>
+      </nav>
+    </div>
+  </header>
+  <main class="wrap" id="conteudo">
+    <section class="hero" id="inicio" aria-labelledby="titulo">
+      <div>
+        <p class="eyebrow">CADERNO DE ESTUDOS · 01</p>
+        <h1 id="titulo">Engenharia<br>Eletrônica<span>.</span></h1>
+        <p>Dos fundamentos de matemática aos circuitos integrados. Estude pela apostila, pratique com projetos e acompanhe seu percurso.</p>
+        <div class="actions"><a class="button primary" href="#trilha">Abrir trilha de estudos ↓</a><a class="button" href="#grade">Ver grade ↓</a></div>
+      </div>
+      <aside class="focus" aria-labelledby="foco">
+        <p class="eyebrow">PONTO DE PARTIDA</p>
+        <h2 id="foco">Fatoração e trigonometria</h2>
+        <p>Refaça um exemplo resolvido em cada módulo. Em seguida, tente a primeira atividade sem consultar o gabarito.</p>
+        <a id="fatoracao" target="_blank" rel="noopener"><b>M03</b> Equações quadráticas <span aria-hidden="true">↗</span></a>
+        <a id="trigonometria" target="_blank" rel="noopener"><b>M06</b> Seno, cosseno e vetores <span aria-hidden="true">↗</span></a>
+      </aside>
+    </section>
+    <section id="trilha" aria-labelledby="trilha-titulo">
+      <div class="section-head">
+        <div><p class="eyebrow">TRILHA GUIADA</p><h2 id="trilha-titulo">Estude em etapas</h2><p>14 módulos de nivelamento e 10 desafios integradores, um por semestre do Plano Mestre.</p></div>
+      </div>
+      <div class="study-today">
+        <div><p class="eyebrow">META DO DIA</p><h3 id="meta-dia">Carregando…</h3><p id="meta-passos"></p><a id="meta-link" href="#atividade">Abrir atividade ↓</a></div>
+        <label>Tempo disponível<select id="tempo-meta"><option value="10">10 minutos</option><option value="15" selected>15 minutos</option><option value="20">20 minutos</option></select></label>
+      </div>
+      <p id="estado-trilha" class="study-note"></p>
+      <p id="acesso-etapa" class="study-note" role="status"></p>
+      <p class="study-note">O índice de módulos e a grade ficam disponíveis para consulta. Na trilha guiada, faça a prática, compare com a resolução e acerte as três questões para liberar a etapa seguinte.</p>
+      <div class="study-layout">
+        <details class="study-outline" open><summary>Mapa das etapas</summary><div id="mapa-trilha"></div></details>
+        <div id="atividade" class="study-activity"></div>
+      </div>
+      <details id="revisao" class="import"><summary>Revisão espaçada</summary><div id="lista-revisao"></div></details>
+      <details class="import"><summary>Como a trilha funciona</summary>
+        <p>O exemplo resolvido prepara a prática. Tente produzir a resposta antes de abrir a resolução. O gabarito comentado aparece após o envio das três respostas e fica disponível ao voltar à etapa, e as revisões pedem que você explique ou calcule de memória.</p>
+        <p>Os desafios dos semestres são amostras integradoras. A grade apresenta as 60 disciplinas do Plano Mestre, com estudos e práticas próprios.</p>
+        <p><a href="https://www.cmu.edu/teaching/principles/learning.html" target="_blank" rel="noopener">Carnegie Mellon · Princípios de aprendizagem ↗</a> · <a href="https://www.cmu.edu/teaching/resources/instructionalstrategies/spacedopractice/index.html" target="_blank" rel="noopener">Carnegie Mellon · Prática espaçada ↗</a> · <a href="https://ies.ed.gov/ncee/wwc/PracticeGuide/1" target="_blank" rel="noopener">IES · Exemplos resolvidos e prática ↗</a></p>
+      </details>
+    </section>
+    <section id="nivelamento" aria-labelledby="nivelamento-titulo">
+      <div class="section-head">
+        <div><p class="eyebrow">01 / FUNDAMENTOS</p><h2 id="nivelamento-titulo">Módulos de nivelamento</h2><p>Teoria, exemplo resolvido, prática e correção.</p></div>
+      </div>
+      <div class="progress"><strong id="progresso" aria-live="polite">0 de 14 revisados</strong><progress aria-label="Módulos revisados neste navegador" id="barra" max="14" value="0"></progress><small>Marcações salvas neste navegador.</small></div>
+      <div class="filters">
+        <label>Buscar módulo<input type="search" id="buscar" placeholder="Ex.: trigonometria, M09"></label>
+        <label>Categoria<select id="modulo-categoria"><option value="">Todas</option></select></label>
+      </div>
+      <div class="cards" id="modulos"></div>
+    </section>
+    <section id="projetos" aria-labelledby="projetos-titulo">
+      <div class="section-head">
+        <div><p class="eyebrow">02 / PRÁTICA</p><h2 id="projetos-titulo">Projetos de estudo</h2><p>Escolha um projeto e confira o que você precisa entregar.</p></div>
+      </div>
+      <div class="filters">
+        <label>Categoria<select id="projeto-categoria"><option value="">Todas</option></select></label>
+        <label>Estado<select id="projeto-estado"><option value="">Todos</option></select></label>
+      </div>
+      <div class="cards" id="lista-projetos"></div>
+    </section>
+    <section id="grade" aria-labelledby="grade-titulo">
+      <div class="section-head">
+        <div><p class="eyebrow">03 / PERCURSO</p><h2 id="grade-titulo">Grade de formação</h2><p>10 semestres · 60 componentes · 4.000 horas propostas</p></div>
+      </div>
+      <div class="semesters" id="semestres"></div>
+    </section>
+  </main>
+  <footer class="wrap">Laboratório de Eletrônica <span>Estudo independente · Microeletrônica</span></footer>
+  <noscript>Ative o JavaScript para abrir o catálogo e registrar o progresso neste navegador.</noscript>
+</body>
+</html>
