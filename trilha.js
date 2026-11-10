@@ -349,7 +349,10 @@
     progress.lastGoal = saved.lastGoal ?? null;
     const hasDraft = Boolean(get("atividade").querySelector("textarea")?.value.trim());
     if (selected > firstOpen()) selected = Math.min(firstOpen(), etapas.length - 1);
-    if (!hasDraft) renderActivity();
+    if (!hasDraft) {
+      selected = Math.min(firstOpen(), etapas.length - 1);
+      renderActivity();
+    }
     get("tempo-meta").value = String(progress.minutes);
     updateStatus();
     updateGoal();

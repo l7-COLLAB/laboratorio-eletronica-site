@@ -110,11 +110,14 @@ window.cloudSync = (() => {
   }
 
   function acceptRemote(entry, keys) {
-    if (applyValue(entry.key, entry.value)) {
-      state.base[entry.key] = entry.revision;
-      state.seen[entry.key] = entry.value;
-      keys.push(entry.key);
+    if (!applyValue(entry.key, entry.value)) {
+      const error = new Error("Não foi possível recuperar os dados neste navegador. Libere espaço ou use outro navegador.");
+      error.status = 507;
+      throw error;
     }
+    state.base[entry.key] = entry.revision;
+    state.seen[entry.key] = entry.value;
+    keys.push(entry.key);
   }
 
   async function pull() {
@@ -167,7 +170,7 @@ window.cloudSync = (() => {
     });
     let currentPending = state.pending[key];
     const localValue = localStorage.getItem(key);
-    if (localValue !== null && localValue !== pending.value) {
+    if (persisted && localValue !== null && localValue !== pending.value) {
       currentPending = state.pending[key] = {value: localValue, revision: pending.revision, id: crypto.randomUUID()};
     }
     if (response.conflict) {
@@ -204,7 +207,7 @@ window.cloudSync = (() => {
         retryTimer = setTimeout(sync, 1500);
       }
     } catch (error) {
-      const permanent = error.message.includes("Código inválido") || [400, 413].includes(error.status);
+      const permanent = error.message.includes("Código inválido") || [400, 413, 507].includes(error.status);
       status(permanent ? error.message :
         "Sem conexão com a nuvem. Seus dados continuam neste aparelho e serão reenviados.");
       if (!permanent) retryTimer = setTimeout(sync, 20000);
