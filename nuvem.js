@@ -10,6 +10,7 @@ window.cloudSync = (() => {
   const supported = new Set([
     prefix + "trilha:v1",
     prefix + "revisados:v1",
+    CalcHistory.KEY,
     ...noteCategories.map(noteKey),
   ]);
   let token = "";
@@ -17,6 +18,7 @@ window.cloudSync = (() => {
   let busy = false;
   let timer;
   let retryTimer;
+  let syncAgain = false;
   let persisted = true;
   try {
     token = localStorage.getItem(authKey) ?? "";
@@ -59,6 +61,7 @@ window.cloudSync = (() => {
   function labelFor(key) {
     if (key === prefix + "trilha:v1") return "Avanço na trilha e resultados dos quizzes";
     if (key === prefix + "revisados:v1") return "Marcações de revisão";
+    if (key === CalcHistory.KEY) return "Histórico da calculadora";
     return decodeURIComponent(key.slice((prefix + "anotacoes:v1:").length));
   }
 
@@ -131,12 +134,31 @@ window.cloudSync = (() => {
     keys.push(entry.key);
   }
 
+  function mergeCalculations(entry, keys) {
+    if (entry.key !== CalcHistory.KEY) return false;
+    let local, remote;
+    try {
+      local = JSON.parse(localStorage.getItem(entry.key) || '{}');
+      remote = JSON.parse(entry.value);
+    } catch { return false; }
+    const value = JSON.stringify(CalcHistory.merge(local, remote));
+    if (!applyValue(entry.key, value)) throw Object.assign(new Error('Libere espaço para recuperar o histórico.'), {status:507});
+    state.base[entry.key] = entry.revision;
+    state.seen[entry.key] = entry.value;
+    delete state.conflicts[entry.key];
+    if (value === entry.value) delete state.pending[entry.key];
+    else state.pending[entry.key] = {value, revision:entry.revision, id:crypto.randomUUID()};
+    keys.push(entry.key);
+    return true;
+  }
+
   async function pull() {
     const {entries} = await request("/state");
     const remote = new Map(entries.map(entry => [entry.key, entry]));
     const keys = [];
     for (const key of supported) {
       const entry = remote.get(key);
+      if (entry && mergeCalculations(entry, keys)) continue;
       let pending = state.pending[key];
       const localValue = localStorage.getItem(key);
       if (!pending && state.seen[key] !== undefined && localValue !== null && localValue !== state.seen[key]) {
@@ -184,7 +206,11 @@ window.cloudSync = (() => {
     if (persisted && localValue !== null && localValue !== pending.value) {
       currentPending = state.pending[key] = {value: localValue, revision: pending.revision, id: crypto.randomUUID()};
     }
-    if (response.conflict) {
+    if (response.conflict && response.current?.key === CalcHistory.KEY) {
+      const keys = [];
+      mergeCalculations(response.current, keys);
+      publishChanges(keys);
+    } else if (response.conflict) {
       if (response.current?.value === pending.value) {
         if (currentPending?.id === pending.id) delete state.pending[key];
         else if (currentPending) currentPending.revision = response.current.revision;
@@ -203,7 +229,8 @@ window.cloudSync = (() => {
   }
 
   async function sync() {
-    if (!token || busy) return;
+    if (!token) return;
+    if (busy) { syncAgain = true; return; }
     clearTimeout(retryTimer);
     busy = true;
     status("Sincronizando…");
@@ -224,6 +251,7 @@ window.cloudSync = (() => {
       if (!permanent) retryTimer = setTimeout(sync, 20000);
     } finally {
       busy = false;
+      if (syncAgain) { syncAgain = false; clearTimeout(timer); timer = setTimeout(sync, 100); }
     }
   }
 

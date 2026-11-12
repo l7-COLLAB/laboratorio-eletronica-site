@@ -1,3 +1,4 @@
+import "./historico-core.js";
 const categories = ["Circuitos e eletrônica", "Computação e lógica", "Física e medições", "Matemática", "Método de estudo", "Microeletrônica", "Pesquisa e comunicação"];
 const noteKeys = new Set(categories.map(name => "laboratorio-eletronica:anotacoes:v1:" + encodeURIComponent(name)));
 const stageIds = new Set([
@@ -11,6 +12,12 @@ function validEntry(key, value) {
   if (noteKeys.has(key)) return value.length <= 20000;
   try {
     const data = JSON.parse(value);
+    if (key === globalThis.CalcHistory.KEY) {
+      return data && typeof data === 'object' && !Array.isArray(data) &&
+        typeof data.clear === 'string' && (data.clear === '' || /^\d{4}-\d{2}-\d{2}T\d{2}:\d{2}:\d{2}\.\d{3}Z$/.test(data.clear) && Number.isFinite(Date.parse(data.clear))) &&
+        Array.isArray(data.entries) && data.entries.length <= 80 && data.entries.every(globalThis.CalcHistory.valid) &&
+        new Set(data.entries.map(x=>x.id)).size === data.entries.length;
+    }
     if (key === "laboratorio-eletronica:revisados:v1") {
       return Array.isArray(data) && data.length <= 14 &&
         data.every(id => stageIds.has(id) && id.startsWith("M"));
@@ -139,7 +146,7 @@ export default {
     if (requestOrigin && requestOrigin !== origin) return reply({error: "Origem não autorizada."}, 403);
     if (request.method === "OPTIONS") return new Response(null, {status: 204, headers});
     const url = new URL(request.url);
-    if (url.pathname === "/health" && request.method === "GET") return reply({ok: true});
+    if (url.pathname === "/health" && request.method === "GET") return reply({ok: true, version: "materiais-20261112", calculatorHistory: true});
     try {
       if (["/auth/login", "/auth/setup"].includes(url.pathname) && request.method === "POST") {
         return await handleSignIn(request, env, url.pathname, reply);
@@ -178,6 +185,7 @@ export default {
       const current = await env.DB.prepare("SELECT key, value, revision, updated_at FROM entries WHERE key = ?").bind(key).first();
       return reply({error: "Este registro mudou em outro aparelho.", current}, 409);
     } catch {
+      console.error(JSON.stringify({event:"sync_failure",path:url.pathname}));
       return reply({error: "A nuvem está temporariamente indisponível. Suas alterações locais serão reenviadas."}, 503);
     }
   },

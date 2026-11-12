@@ -6,13 +6,18 @@
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Apostila, grade e projetos práticos de Engenharia Eletrônica e Microeletrônica.">
   <title>Laboratório de Eletrônica</title>
-  <link rel="stylesheet" href="estilos.css?v=login-1">
+  <link rel="stylesheet" href="estilos.css?v=materiais-20261112">
   <script defer src="catalogo.js"></script>
-  <script defer src="anotacoes.js?v=login-1"></script>
-  <script defer src="nuvem.js?v=login-1"></script>
-  <script defer src="portal.js?v=login-1"></script>
+  <script defer src="anotacoes.js?v=materiais-20261112"></script>
+  <link rel="stylesheet" href="calculadora.css?v=20261112">
+  <script defer src="historico-core.js?v=20261112"></script>
+  <script defer src="recursos.js?v=20261112"></script>
+  <script defer src="calculadora-core.js?v=20261112"></script>
+  <script defer src="nuvem.js?v=materiais-20261112"></script>
+  <script defer src="portal.js?v=materiais-20261112"></script>
   <script defer src="trilha-dados.js"></script>
-  <script defer src="trilha.js?v=login-1"></script>
+  <script defer src="trilha.js?v=materiais-20261112"></script>
+  <script defer src="calculadora.js?v=20261112"></script>
 </head>
 <body>
   <a class="skip" href="#conteudo">Ir ao conteúdo</a>
@@ -26,6 +31,7 @@
         <a class="button" href="#projetos">Projetos</a>
         <a class="button" href="#grade">Grade</a>
         <a class="button" href="#anotacoes">Anotações</a>
+        <a class="button" href="#calculadora">Calculadora</a>
         <a class="button" href="#nuvem">Nuvem</a>
       </nav>
     </div>
@@ -154,6 +160,69 @@
         <button id="nuvem-historico-abrir" class="button" type="button">Consultar histórico</button>
         <div id="nuvem-historico-lista"></div>
       </details>
+    </section>
+    <section id="calculadora" data-view aria-labelledby="calculadora-titulo" hidden>
+      <div class="section-head"><div><h1 id="calculadora-titulo">Calculadora científica</h1>
+      <p>Operações, funções trigonométricas e histórico das últimas 80 contas.</p></div></div>
+      <div class="calc-layout">
+        <div class="calc-panel">
+          <label class="calc-label" for="calc-expressao">Expressão</label>
+          <input id="calc-expressao" class="calc-input" type="text" autocomplete="off" spellcheck="false"
+                 inputmode="text" maxlength="180" placeholder="Ex.: sin(30) + sqrt(9)" aria-describedby="calc-ajuda">
+          <div class="calc-settings"><label for="calc-angulo">Ângulos
+            <select id="calc-angulo"><option value="deg">Graus (DEG)</option><option value="rad">Radianos (RAD)</option></select></label>
+            <p id="calc-ajuda">Use * para multiplicar, ^ para potência, ! para fatorial e % para dividir por 100. Ex.: 200*10% = 20; 27^(1/3) = 3. Enter calcula, Esc limpa. sin/cos/tan e inversas respeitam DEG/RAD. Resultados aproximados em ponto flutuante.</p>
+          </div>
+          <output id="calc-resultado" aria-live="polite">0</output>
+          <div class="calc-keys">
+        <button type="button" class="calc-key" data-calc-insert="(" aria-label="Inserir (">(</button>
+        <button type="button" class="calc-key" data-calc-insert=")" aria-label="Inserir )">)</button>
+        <button type="button" class="calc-key" data-calc-insert="7" aria-label="Inserir 7">7</button>
+        <button type="button" class="calc-key" data-calc-insert="8" aria-label="Inserir 8">8</button>
+        <button type="button" class="calc-key" data-calc-insert="9" aria-label="Inserir 9">9</button>
+        <button type="button" class="calc-key" data-calc-insert="/" aria-label="Inserir ÷">÷</button>
+        <button type="button" class="calc-key" data-calc-insert="sin(" aria-label="Inserir sin(">sin(</button>
+        <button type="button" class="calc-key" data-calc-insert="cos(" aria-label="Inserir cos(">cos(</button>
+        <button type="button" class="calc-key" data-calc-insert="4" aria-label="Inserir 4">4</button>
+        <button type="button" class="calc-key" data-calc-insert="5" aria-label="Inserir 5">5</button>
+        <button type="button" class="calc-key" data-calc-insert="6" aria-label="Inserir 6">6</button>
+        <button type="button" class="calc-key" data-calc-insert="*" aria-label="Inserir ×">×</button>
+        <button type="button" class="calc-key" data-calc-insert="tan(" aria-label="Inserir tan(">tan(</button>
+        <button type="button" class="calc-key" data-calc-insert="sqrt(" aria-label="Inserir sqrt(">sqrt(</button>
+        <button type="button" class="calc-key" data-calc-insert="1" aria-label="Inserir 1">1</button>
+        <button type="button" class="calc-key" data-calc-insert="2" aria-label="Inserir 2">2</button>
+        <button type="button" class="calc-key" data-calc-insert="3" aria-label="Inserir 3">3</button>
+        <button type="button" class="calc-key" data-calc-insert="-" aria-label="Inserir -">-</button>
+        <button type="button" class="calc-key" data-calc-insert="log(" aria-label="Inserir log(">log(</button>
+        <button type="button" class="calc-key" data-calc-insert="ln(" aria-label="Inserir ln(">ln(</button>
+        <button type="button" class="calc-key" data-calc-insert="0" aria-label="Inserir 0">0</button>
+        <button type="button" class="calc-key" data-calc-insert="." aria-label="Inserir .">.</button>
+        <button type="button" class="calc-key" data-calc-insert="pi" aria-label="Inserir π">π</button>
+        <button type="button" class="calc-key" data-calc-insert="+" aria-label="Inserir +">+</button>
+        <button type="button" class="calc-key" data-calc-insert="^" aria-label="Inserir ^">^</button>
+        <button type="button" class="calc-key" data-calc-insert="!" aria-label="Inserir !">!</button>
+        <button type="button" class="calc-key" data-calc-insert="%" aria-label="Inserir %">%</button>
+        <button type="button" class="calc-key" data-calc-insert="ans" aria-label="Inserir Ans">Ans</button>
+        <button type="button" class="calc-key" data-calc-insert="e" aria-label="Inserir e">e</button>
+        <button type="button" class="calc-key" data-calc-insert="asin(" aria-label="Arco seno">asin(</button>
+        <button type="button" class="calc-key" data-calc-insert="acos(" aria-label="Arco cosseno">acos(</button>
+        <button type="button" class="calc-key" data-calc-insert="atan(" aria-label="Arco tangente">atan(</button>
+        <button type="button" class="calc-key" data-calc-insert="^(1/" aria-label="Raiz de índice n: complete o índice e feche parênteses">ⁿ√</button>
+          </div>
+          <div class="calc-actions">
+            <button id="calc-apagar" class="button" type="button">Apagar caractere</button>
+            <button id="calc-limpar" class="button" type="button">Limpar</button>
+            <button id="calc-calcular" class="button primary" type="button">Calcular =</button>
+          </div>
+          <p id="calc-status" role="status" class="study-note"></p>
+        </div>
+        <div class="calc-history-panel">
+          <div class="calc-history-head"><h2>Histórico</h2><button class="button" id="calc-apagar-historico" type="button">Excluir histórico</button></div>
+          <p id="calc-total" class="study-note">0 cálculos</p>
+          <p class="study-note">As últimas 80 contas ficam salvas neste navegador e, com sua conta conectada, na nuvem. Contas simultâneas são combinadas; excluir remove as contas até esse momento também dos outros aparelhos após sincronizar. Confira o estado no topo. Mantenha o relógio dos aparelhos correto.</p>
+          <ol id="calc-historico" class="calc-history"></ol>
+        </div>
+      </div>
     </section>
   </main>
   <footer class="wrap">Laboratório de Eletrônica <span>Estudo independente · Microeletrônica</span></footer>
