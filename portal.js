@@ -99,7 +99,7 @@ function moduleCard(module) {
   });
   label.append(checkbox, "Marcar como revisado");
   card.append(element("p", module.id + " / " + module.category, "meta"),
-    element("h3", module.name), element("p", module.summary), links, label, noteEditor(module.category));
+    element("h3", module.name), element("p", module.summary), links, renderStudyResources("modules", module.id), label, noteEditor(module.category));
   return card;
 }
 
@@ -245,6 +245,29 @@ get("restaurar")?.addEventListener("click", () => {
     : "Catálogo inicial restaurado para esta sessão.";
 });
 
+function renderStudyResources(kind, id) {
+  const data = window.studyResources?.[kind]?.[id];
+  const section = element("section", "", "study-resources");
+  if (!data) return section;
+  if (data.pdf) {
+    const download = link("Baixar apostila em PDF", data.pdf);
+    download.className = "button";
+    download.download = data.pdf.split('/').pop();
+    section.append(download);
+  }
+  if (data.videos?.length) {
+    section.append(element("h3", "Videoaulas complementares"));
+    const list = element("ul");
+    for (const video of data.videos) {
+      const item = element("li");
+      item.append(link(video.title + " ↗", video.url), element("p", video.channel + " · " + video.subject));
+      list.append(item);
+    }
+    section.append(list);
+  }
+  return section;
+}
+
 function semesterCard(semester) {
   const card = element("details", "", "semester");
   const list = element("ol");
@@ -252,6 +275,7 @@ function semesterCard(semester) {
     const item = element("li");
     item.append(element("span", subject.id + " "), element("strong", subject.name),
       element("small", subject.summary + " · 60 h"));
+    item.append(renderStudyResources("subjects", subject.id));
     list.append(item);
   }
   card.append(element("summary", semester.number + "º semestre · " + semester.name), list,
