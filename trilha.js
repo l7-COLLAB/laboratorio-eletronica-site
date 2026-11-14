@@ -7,6 +7,7 @@
     passed: Array.isArray(stored.passed) ? stored.passed : [],
     reviews: stored.reviews ?? {},
     attempts: stored.attempts ?? {},
+    drafts: MathPractice.cleanDrafts(stored.drafts),
     minutes: [10, 15, 20].includes(stored.minutes) ? stored.minutes : 15,
     lastGoal: stored.lastGoal ?? null,
   };
@@ -165,10 +166,31 @@
     const practice = block("Pratique sem consulta", stage.task);
     const input = element("textarea");
     input.rows = 3;
+    input.className = "practice-response";
+    input.maxLength = MathPractice.MAX_TEXT;
+    input.value = progress.drafts[stage.id]?.text ?? "";
     const label = element("label", "Sua resposta ou cálculo");
     label.append(input);
+    const mathHost = element("div", "", "math-editor");
+    let mathEditor = null;
+    const savedLatex = progress.drafts[stage.id]?.latex ?? "";
+    const hasPracticeAnswer = () => MathPractice.hasAnswer(input.value, mathEditor?.getValue() ?? savedLatex);
+    function updatePractice() {
+      const latex = mathEditor?.getValue() ?? savedLatex;
+      progress.drafts = MathPractice.saveDraft(progress.drafts, stage.id, input.value, latex);
+      persist();
+      const answered = hasPracticeAnswer();
+      reveal.disabled = !answered || !resolution.hidden;
+      if (!answered) {
+        checked.checked = false;
+        quiz.hidden = true;
+      }
+    }
+    if (MathPractice.supportsMath(stage.id)) {
+      mathEditor = createMathEditor(mathHost, { initialLatex: savedLatex, onChange: updatePractice });
+    }
     const reveal = action("Comparar com a resolução");
-    reveal.disabled = true;
+    reveal.disabled = !hasPracticeAnswer();
     const resolution = element("p", stage.solution);
     resolution.hidden = true;
     const checked = element("input");
@@ -213,24 +235,17 @@
       quiz.replaceChildren(quizHeader, ...fields, submit);
     }
 
-    input.addEventListener("input", () => {
-      const hasAnswer = Boolean(input.value.trim());
-      reveal.disabled = !hasAnswer || !resolution.hidden;
-      if (!hasAnswer) {
-        checked.checked = false;
-        quiz.hidden = true;
-      }
-    });
+    input.addEventListener("input", updatePractice);
     reveal.addEventListener("click", () => {
       resolution.hidden = false;
       reveal.disabled = true;
       checkLabel.hidden = false;
       checked.focus();
     });
-    checked.addEventListener("change", () => { quiz.hidden = graded || !checked.checked || !input.value.trim(); });
+    checked.addEventListener("change", () => { quiz.hidden = graded || !checked.checked || !hasPracticeAnswer(); });
     quiz.addEventListener("submit", event => {
       event.preventDefault();
-      if (graded || !checked.checked || !input.value.trim() || resolution.hidden || selected > firstOpen()) return;
+      if (graded || !checked.checked || !hasPracticeAnswer() || resolution.hidden || selected > firstOpen()) return;
       const responses = new FormData(quiz);
       const answers = stage.quiz.map((_, index) => responses.get("q" + index));
       if (answers.some((answer, index) => !stage.quiz[index].slice(1, 5).includes(answer))) return;
@@ -270,7 +285,7 @@
           retry.remove();
           announcement.textContent = "";
           questions();
-          quiz.hidden = !checked.checked || !input.value.trim();
+          quiz.hidden = !checked.checked || !hasPracticeAnswer();
           if (!quiz.hidden) quiz.querySelector("input").focus();
         });
         result.append(retry);
@@ -279,7 +294,9 @@
     });
     onward.addEventListener("click", () => switchStage(selected + 1));
     questions();
-    practice.append(label, reveal, resolution, checkLabel);
+    practice.append(label);
+    if (MathPractice.supportsMath(stage.id)) practice.append(mathHost);
+    practice.append(reveal, resolution, checkLabel);
     const activity = get("atividade");
     activity.replaceChildren(status, title, element("p", stage.goal), theory,
       block("Curiosidade aplicada", stage.curiosity), practice, quiz, announcement, result, onward,
@@ -346,9 +363,12 @@
     progress.passed = Array.isArray(saved.passed) ? saved.passed : [];
     progress.reviews = saved.reviews ?? {};
     progress.attempts = saved.attempts ?? {};
+    progress.drafts = MathPractice.cleanDrafts(saved.drafts);
     progress.minutes = [10, 15, 20].includes(saved.minutes) ? saved.minutes : 15;
     progress.lastGoal = saved.lastGoal ?? null;
-    const hasDraft = Boolean(get("atividade").querySelector("textarea")?.value.trim());
+    const practiceInput = get("atividade").querySelector("textarea.practice-response");
+    const mathHost = get("atividade").querySelector("[data-math-editor]");
+    const hasDraft = MathPractice.hasAnswer(practiceInput?.value, mathHost?.dataset.latex);
     if (selected > firstOpen()) selected = Math.min(firstOpen(), etapas.length - 1);
     if (!hasDraft) {
       selected = Math.min(firstOpen(), etapas.length - 1);

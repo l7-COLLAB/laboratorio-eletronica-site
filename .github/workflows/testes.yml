@@ -1,0 +1,24 @@
+name: Testes do Laboratório de Eletrônica
+
+on:
+  pull_request:
+  push:
+    branches: [main]
+
+jobs:
+  testes:
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+    steps:
+      - uses: actions/checkout@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: '24'
+      - name: Verificar sintaxe JavaScript
+        run: |
+          node --check trilha.js
+          node --check math-editor-core.js
+          node --check teclado-matematico.js
+      - name: Testar calculadora, nuvem e teclado matemático
+        run: node --test test-calculadora.cjs test-sync.cjs test-worker.mjs test-teclado-matematico.cjs

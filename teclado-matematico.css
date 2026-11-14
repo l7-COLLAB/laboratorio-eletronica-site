@@ -1,0 +1,55 @@
+.math-editor {
+  min-width: 0;
+  display: grid;
+  gap: .4rem;
+  border: 1px solid var(--line);
+  border-radius: .6rem;
+  padding: .7rem;
+  background: var(--bg);
+}
+.math-editor-label { font-weight: 700; color: var(--text); }
+.math-editor-help, .math-editor-status { font-size: .87rem; color: var(--soft); }
+.math-editor-content { display: grid; gap: .6rem; min-width: 0; }
+.math-editor-open { justify-self: start; }
+math-field.math-editor-field {
+  display: block;
+  box-sizing: border-box;
+  min-width: 0;
+  width: 100%;
+  min-height: 58px;
+  padding: .7rem;
+  overflow-x: auto;
+  border: 1px solid var(--accent);
+  border-radius: .5rem;
+  background: var(--panel);
+  color: var(--text);
+  font-size: max(1.25rem, 20px);
+  --caret-color: var(--accent);
+  --selection-background-color: #425a32;
+}
+math-field.math-editor-field::part(virtual-keyboard-toggle) { display: none; }
+.math-editor-keys { display: grid; grid-template-columns: repeat(6, minmax(0, 1fr)); gap: .35rem; min-width: 0; }
+.math-editor-key {
+  min-width: 0;
+  min-height: 46px;
+  padding: .3rem .12rem;
+  border: 1px solid var(--line);
+  border-radius: .4rem;
+  background: var(--panel);
+  color: var(--text);
+  font: 650 .96rem/1.2 system-ui, sans-serif;
+  touch-action: manipulation;
+}
+.math-editor-key:active, .math-editor-key:hover { border-color: var(--accent); }
+.math-editor-confirm { grid-column: 1 / -1; justify-self: stretch !important; }
+.study-activity textarea.practice-response { font-size: 16px; }
+.study-activity .math-editor-key { justify-self: stretch; width: 100%; }
+@media (max-width: 430px) {
+  .math-editor { padding: .55rem; }
+  .math-editor-keys { grid-template-columns: repeat(5, minmax(0, 1fr)); gap: .28rem; }
+  .math-editor-key { min-height: 46px; font-size: .87rem; }
+}
+@media (max-height: 450px) and (orientation: landscape) {
+  .math-editor-keys { grid-template-columns: repeat(8, minmax(0, 1fr)); }
+}
+.math-editor-content[hidden], .math-editor-keys[hidden] { display: none !important; }

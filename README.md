@@ -44,3 +44,14 @@ A suíte cobre matemática, rejeição de código, domínios inválidos, união,
 ## Hospedagem
 
 Frontend servido pelo GitHub Pages a partir de `main`, na estrutura existente. O backend permanece em https://laboratorio-eletronica-sync.l7526080.workers.dev. Ao atualizar o Worker, preserve a ligação D1 `DB`, todos os secrets e a data de compatibilidade; envie também `historico-core.js`. Nunca publique credenciais no repositório.
+
+
+## Teclado matemático nos exercícios
+
+- Os exercícios de conteúdo matemático possuem um botão "Abrir teclado matemático", que carrega MathLive 0.111.4 sob demanda.
+- O teclado permite frações, frações aninhadas, potências, expoentes fracionários, raízes, operações, parênteses e símbolos de eletrônica. O teclado físico também funciona.
+- A resposta discursiva pode incluir texto e uma expressão em LaTeX. Os rascunhos ficam em \`laboratorio-eletronica:trilha:v1\`, no campo opcional \`drafts\`, preservando \`passed\`, \`attempts\`, \`reviews\` e todos os dados anteriores.
+- As perguntas de múltipla escolha, correção e desbloqueio permanecem inalterados. Não é realizada correção algébrica automática de respostas discursivas.
+- Se a biblioteca externa não carregar, o campo convencional de texto permanece disponível.
+- Para testar: \`node --test test-calculadora.cjs test-sync.cjs test-worker.mjs test-teclado-matematico.cjs\`.
+- Depois da publicação, confirmar as interações no Safari do iPhone 11 (retrato e paisagem) e validar a sincronização com uma conta de teste antes de utilizar com dados reais.
