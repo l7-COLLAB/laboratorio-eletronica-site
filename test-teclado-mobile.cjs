@@ -33,6 +33,11 @@ class FakeElement extends EventTarget {
   replaceWith(element) {
     if (!this.parent) throw Error("No parent");
     const parent = this.parent;
+    // Real replaceWith() moves an existing sibling instead of duplicating it.
+    if (element.parent) {
+      const previous = element.parent.children.indexOf(element);
+      if (previous >= 0) element.parent.children.splice(previous, 1);
+    }
     const position = parent.children.indexOf(this);
     if (position < 0) throw Error("Missing child");
     parent.children[position] = element;
