@@ -63,7 +63,7 @@ test("course drawing demands all have suitable diagram tools",()=>{
  vm.runInNewContext(fs.readFileSync(require.resolve("./trilha-dados.js"),"utf8")+";globalThis.stages=etapas;",context);
  assert.equal(context.stages.length,24);
  const actualDrawingTasks=context.stages.filter(stage=>/desenh|esbo[cç]|trace (?:um |o )?gr[aá]fico|fa[cç]a (?:um |o )?diagrama/i.test(stage.task));
- assert.deepEqual(actualDrawingTasks.map(x=>x.id),["M06"]);
+ assert.deepEqual(Array.from(actualDrawingTasks,x=>x.id),["M06"]);
  assert.match(trail,/stage\.id === "M06"[\s\S]*?createTriangleExercise/);
  assert.match(trail,/StructuredPractice\.create\(/);
  assert.match(trail,/diagramEditor\.validate\(\)\.complete/);
