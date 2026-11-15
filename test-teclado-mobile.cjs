@@ -61,8 +61,15 @@ function walk(element) {
 async function setup(touch) {
   const root = new FakeElement("div");
   const window = { mathVirtualKeyboard: {
-    visible: false, layouts: [],
+    visible: false, _layouts: [], layoutAssignments: 0, currentLayout: "",
     showCount: 0, hideCount: 0,
+    set layouts(value) {
+      // A real MathLive layout assignment rebuilds the panel.
+      this._layouts = value;
+      this.layoutAssignments++;
+      this.currentLayout = value[0];
+    },
+    get layouts() { return this._layouts; },
     show() { this.showCount++; this.visible = true; },
     hide() { this.hideCount++; this.visible = false; }
   }};
@@ -87,7 +94,7 @@ test("campo matemático já aparece sem clicar em botão opcional", async () => 
   const fields = walk(app.root).filter(el => el.tagName === "math-field");
   assert.equal(fields.length, 1);
   assert.equal(fields[0].value, "\\frac{1}{2}");
-  assert.equal(fields[0].attributes["math-virtual-keyboard-policy"], "auto");
+  assert.equal(fields[0].attributes["math-virtual-keyboard-policy"], "manual");
   assert.equal(walk(app.root).filter(el => el.className === "math-editor-placeholder").length, 0);
 });
 
@@ -98,6 +105,20 @@ test("iPhone: foco do campo abre o teclado virtual Matemático com layout numér
   assert.equal(app.window.mathVirtualKeyboard.showCount, 1);
   assert.equal(app.window.mathVirtualKeyboard.layouts[0], "numeric");
   assert.ok(app.window.mathVirtualKeyboard.layouts.includes("symbols"));
+  assert.ok(app.window.mathVirtualKeyboard.layouts.includes("alphabetic"));
+});
+
+test("iPhone: alternar para letras continua ativo após novo foco", async () => {
+  const app = await setup(true);
+  const field = walk(app.root).find(el => el.tagName === "math-field");
+  field.focus();
+  const keyboard = app.window.mathVirtualKeyboard;
+  keyboard.currentLayout = "alphabetic";
+  // Safari may dispatch another focus event while a tab/key is tapped.
+  field.dispatchEvent(new Event("focusin"));
+  assert.equal(keyboard.layoutAssignments, 1);
+  assert.equal(keyboard.currentLayout, "alphabetic");
+  assert.equal(keyboard.showCount, 1);
 });
 
 test("fração com expoente fracionário fica salva no draft atual", async () => {
