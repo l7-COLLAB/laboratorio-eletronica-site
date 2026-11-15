@@ -55,7 +55,7 @@
       const earlier = drafts[id];
       if (!plain(draft) || !plain(earlier)) return null;
       const joined = { ...earlier };
-      for (const field of ["text", "latex", "drawing"]) {
+      for (const field of ["text", "latex", "drawing", "diagram"]) {
         const a = typeof earlier[field] === "string" ? earlier[field] : "";
         const b = typeof draft[field] === "string" ? draft[field] : "";
         if (a && b && a !== b) return null;
