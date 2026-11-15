@@ -4,6 +4,9 @@
   const key = "laboratorio-eletronica:trilha:v1";
   const stored = readLocal(key, {});
   const progress = {
+    ...stored,
+    history: Learning.history(stored.history),
+    resume: stored.resume ?? null,
     passed: TrailProgress.recoverPassed(etapas, stored.passed, stored.attempts),
     reviews: stored.reviews ?? {},
     attempts: stored.attempts ?? {},
@@ -16,7 +19,7 @@
   const firstOpen = () => TrailProgress.nextRecommended(etapas, progress.passed);
   const canOpen = index => TrailProgress.canOpen(etapas, progress.passed, index);
   const isComplete = id => TrailProgress.completed(etapas, progress.passed, id);
-  let selected = Math.min(firstOpen(), etapas.length - 1);
+  let selected = Learning.resume(progress.resume, etapas, canOpen)?.index ?? Math.min(firstOpen(), etapas.length - 1);
   let attempt = 0;
   let durable = true;
   const reviewGaps = [1, 2, 4];
@@ -35,6 +38,7 @@
   function persist() {
     durable = saveLocal(key, progress);
     updateStatus();
+    window.dispatchEvent(new CustomEvent("study:updated"));
   }
 
   function updateStatus() {
@@ -82,6 +86,8 @@
     goToView("trilha");
     get("acesso-etapa").textContent = "";
     selected = index;
+    progress.resume = {id: etapas[index].id, phase:"teoria", at:Date.now()};
+    persist();
     attempt = 0;
     renderOutline();
     renderActivity();
@@ -163,8 +169,15 @@
     const example = element("details");
     example.append(element("summary", "Ver exemplo resolvido"), element("p", stage.example));
     const theory = block("Entenda", stage.theory);
+    theory.id = "aula-teoria";
     theory.append(example);
     const practice = block("Pratique sem consulta", stage.task);
+    const numericHost = element("div");
+    const numericEditor = NumericPractice.create(numericHost,stage.id,progress.practiceAnswers?.[stage.id],answers=>{
+      progress.practiceAnswers={...(progress.practiceAnswers??{}),[stage.id]:answers};
+      updatePractice();
+    });
+    practice.id = "aula-pratica";
     const input = element("textarea");
     input.rows = 3;
     input.className = "practice-response";
@@ -179,10 +192,11 @@
     const savedLatex = progress.drafts[stage.id]?.latex ?? "";
     let drawingEditor = null;
     let diagramEditor = null;
-    const hasPracticeAnswer = () => (diagramEditor ? diagramEditor.validate().correct : MathPractice.hasAnswer(input.value, mathEditor?.getValue() ?? savedLatex, drawingEditor?.getValue() ?? progress.drafts[stage.id]?.drawing));
+    const hasPracticeAnswer = () => (numericEditor?.getValue().every(value=>value.trim()) || (diagramEditor ? diagramEditor.validate().correct : MathPractice.hasAnswer(input.value, mathEditor?.getValue() ?? savedLatex, drawingEditor?.getValue() ?? progress.drafts[stage.id]?.drawing)));
     function updatePractice() {
       const latex = mathEditor?.getValue() ?? savedLatex;
       progress.drafts = MathPractice.saveDraft(progress.drafts, stage.id, input.value, latex, drawingEditor?.getValue() ?? progress.drafts[stage.id]?.drawing ?? "", diagramEditor?.getValue() ?? progress.drafts[stage.id]?.diagram ?? "");
+      progress.resume = {id:stage.id,phase:"pratica",at:Date.now()};
       persist();
       const answered = hasPracticeAnswer();
       reveal.disabled = !answered || !resolution.hidden;
@@ -212,8 +226,10 @@
     let graded = false;
     const quiz = element("form");
     quiz.hidden = true;
+    quiz.id = "aula-quiz";
     const quizHeader = element("h3", "Quiz · três questões");
     const result = element("div", "", "study-feedback");
+    result.id = "aula-resultado";
     const announcement = element("p");
     announcement.setAttribute("role", "status");
     const last = progress.attempts[stage.id];
@@ -253,7 +269,15 @@
       checkLabel.hidden = false;
       checked.focus();
     });
-    checked.addEventListener("change", () => { quiz.hidden = graded || !checked.checked || !hasPracticeAnswer(); });
+    checked.addEventListener("change", () => {
+      quiz.hidden = graded || !checked.checked || !hasPracticeAnswer();
+      progress.resume = {id:stage.id,phase:quiz.hidden?"pratica":"quiz",at:Date.now()};persist();
+    });
+    quiz.addEventListener("change", () => {
+      const answers = stage.quiz.map((_, i) => quiz.querySelector('input[name="q'+i+'"]:checked')?.value ?? "");
+      progress.quizDraft = {id:stage.id,answers,at:Date.now()};
+      progress.resume = {id:stage.id,phase:"quiz",at:Date.now()};persist();
+    });
     quiz.addEventListener("submit", event => {
       event.preventDefault();
       if (graded || !checked.checked || !hasPracticeAnswer() || resolution.hidden || !canOpen(selected)) return;
@@ -271,6 +295,9 @@
         status.textContent = "ETAPA CONCLUÍDA";
       }
       progress.attempts[stage.id] = answers;
+      progress.history = Learning.history([...progress.history,{uid:crypto.randomUUID(),id:stage.id,at:Date.now(),wrong:answers.flatMap((a,i)=>a===stage.quiz[i][1]?[]:[i])}]);
+      progress.resume = {id:stage.id,phase:"resultado",at:Date.now()};
+      delete progress.quizDraft;
       persist();
       if (newCompletion) {
         renderOutline();
@@ -305,13 +332,31 @@
     });
     onward.addEventListener("click", () => switchStage(selected + 1));
     questions();
+    if (progress.quizDraft?.id === stage.id && Array.isArray(progress.quizDraft.answers)) {
+      quiz.querySelectorAll('input[type="radio"]').forEach(radio => {radio.checked=progress.quizDraft.answers[Number(radio.name.slice(1))]===radio.value;});
+    }
+    if (progress.resume?.id === stage.id && ["quiz","resultado"].includes(progress.resume.phase) && hasPracticeAnswer()) {
+      resolution.hidden=false;checkLabel.hidden=false;checked.checked=true;reveal.disabled=true;
+      quiz.hidden=progress.resume.phase === "resultado";
+      if(progress.resume.phase === "resultado" && alreadyPassed) onward.hidden=selected+1>=etapas.length;
+      if(progress.resume.phase === "resultado" && !alreadyPassed) quiz.hidden=false;
+    }
     if (MathPractice.supportsMath(stage.id)) practice.append(mathHost);
     practice.append(label);
     if (diagramEditor) practice.append(diagramHost);
     if (drawingEditor) practice.append(drawingHost);
-    practice.append(reveal, resolution, checkLabel);
+    practice.append(numericHost,reveal, resolution, checkLabel);
     const activity = get("atividade");
-    activity.replaceChildren(status, title, element("p", stage.goal), theory,
+    const navigation = element("nav", "", "lesson-navigation");navigation.setAttribute("aria-label","Etapas da aula");
+    for (const [phase,label] of [["teoria","Teoria"],["pratica","Prática"],["quiz","Quiz"],["resultado","Resultado"]]) {
+      const button=action(label);button.addEventListener("click",()=>{
+        const target=get("aula-"+phase);if(target.hidden){announcement.textContent="Conclua a prática e compare a resolução para abrir o quiz.";return;}
+        progress.resume={id:stage.id,phase,at:Date.now()};persist();target.scrollIntoView({block:"start"});
+      });navigation.append(button);
+    }
+    const prerequisite=element("p",selected?"Pré-requisito curricular: "+etapas[selected-1].id+". Conclusões legadas mantêm o acesso já conquistado.":"Pré-requisito: nenhum. Comece pelo método de estudo.","lesson-prerequisite");
+    if (!diagramEditor) practice.append(element("p","Esta resposta é uma prática de autoavaliação. A correção automática da etapa acontece no quiz.","study-note"));
+    activity.replaceChildren(status, title, element("p", stage.goal), prerequisite,navigation,theory,
       block("Curiosidade aplicada", stage.curiosity), practice, quiz, announcement, result, onward,
       noteEditor(stageCategory(stage.id)));
     activity.append(renderStudyResources("modules", stage.id));
@@ -373,6 +418,10 @@
   window.addEventListener("cloud:applied", event => {
     if (!event.detail.keys.includes(key)) return;
     const saved = readLocal(key, {});
+    progress.practiceAnswers = saved.practiceAnswers ?? progress.practiceAnswers;
+    progress.history = Learning.history(saved.history);
+    progress.resume = saved.resume ?? progress.resume;
+    progress.quizDraft = saved.quizDraft ?? progress.quizDraft;
     progress.passed = TrailProgress.recoverPassed(etapas, saved.passed, saved.attempts);
     const recoveredFromQuiz = progress.passed.length >
       (Array.isArray(saved.passed) ? saved.passed.length : 0);
@@ -399,13 +448,22 @@
     if (recoveredFromQuiz) persist();
   });
 
+  window.addEventListener("study:resume", () => {
+    const saved=Learning.resume(progress.resume,etapas,canOpen);
+    const index=saved?.index ?? firstOpen();
+    if(index>=etapas.length){goToView("revisao");return;}
+    selected=index;goToView("trilha");renderActivity();
+    const target=get("aula-"+(saved?.phase ?? "teoria"));
+    (target && !target.hidden ? target : get("atividade")).scrollIntoView({block:"start"});
+  });
   get("tempo-meta").value = String(progress.minutes);
   get("tempo-meta").addEventListener("change", event => {
     progress.minutes = Number(event.currentTarget.value);
     persist();
     updateGoal();
   });
-  get("meta-link").addEventListener("click", () => {
+  get("meta-link").addEventListener("click", event => {
+    event.preventDefault();
     if (get("meta-link").hash === "#revisao") {
       goToView("revisao");
       get("lista-revisao").querySelector("details")?.setAttribute("open", "");

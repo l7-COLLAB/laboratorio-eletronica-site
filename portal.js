@@ -298,13 +298,14 @@ const views = [...document.querySelectorAll("[data-view]")];
 const menu = [...document.querySelectorAll(".menu a")];
 
 function showView(fragment) {
-  const id = fragment === "nivelamento" ? "etapas"
-    : views.some(view => view.id === fragment) ? fragment : "trilha";
+  const id = fragment === "atividade" ? "trilha" : fragment === "nivelamento" ? "etapas"
+    : views.some(view => view.id === fragment) ? fragment : "inicio";
   for (const view of views) view.hidden = view.id !== id;
   for (const item of menu) {
     if (item.hash === "#" + id) item.setAttribute("aria-current", "page");
     else item.removeAttribute("aria-current");
   }
+  window.dispatchEvent(new CustomEvent("study:view", {detail:{id}}));
   if (fragment === "nivelamento") get("nivelamento").open = true;
   if (id === "anotacoes") {
     for (const note of get("lista-anotacoes").querySelectorAll(".note-editor")) {
