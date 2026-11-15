@@ -18,7 +18,9 @@ jobs:
       - name: Verificar sintaxe JavaScript
         run: |
           node --check trilha.js
+          node --check trilha-dados.js
+          node --check trilha-progress-core.js
           node --check math-editor-core.js
           node --check teclado-matematico.js
       - name: Testar calculadora, nuvem e teclado matemático
-        run: node --test test-calculadora.cjs test-sync.cjs test-worker.mjs test-teclado-matematico.cjs
+        run: node --test test-calculadora.cjs test-sync.cjs test-worker.mjs test-teclado-matematico.cjs test-trilha-progress.cjs

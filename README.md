@@ -55,3 +55,13 @@ Frontend servido pelo GitHub Pages a partir de `main`, na estrutura existente. O
 - Se a biblioteca externa não carregar, o campo convencional de texto permanece disponível.
 - Para testar: \`node --test test-calculadora.cjs test-sync.cjs test-worker.mjs test-teclado-matematico.cjs\`.
 - Depois da publicação, confirmar as interações no Safari do iPhone 11 (retrato e paisagem) e validar a sincronização com uma conta de teste antes de utilizar com dados reais.
+
+## Sequência e desbloqueio dos módulos (correção 2026-11-15)
+
+- Ordem curricular obrigatória: M00 a M13, seguida de S01 a S10.
+- A versão anterior inseria M03 e M06 antes de M00. A correção ordena os módulos sem apagar as conclusões já salvas.
+- Para estudantes com progresso na ordem antiga, o próximo módulo após M03 é M04; módulos previamente concluídos continuam acessíveis.
+- O progresso é identificado por ID de módulo, não pela posição na lista, e o contador mostra quantos IDs válidos foram concluídos.
+- Se o registro da última tentativa mostrar 3/3 e a marcação de conclusão tiver sido perdida, a conclusão é reconstruída a partir das respostas salvas.
+- Marcar um módulo como “revisado” no índice não equivale a passar no quiz (que exige três acertos).
+- Executar `node --test test-trilha-progress.cjs` junto com a suíte de regressão da calculadora, sincronização e Worker.

@@ -4,17 +4,18 @@
   const key = "laboratorio-eletronica:trilha:v1";
   const stored = readLocal(key, {});
   const progress = {
-    passed: Array.isArray(stored.passed) ? stored.passed : [],
+    passed: TrailProgress.recoverPassed(etapas, stored.passed, stored.attempts),
     reviews: stored.reviews ?? {},
     attempts: stored.attempts ?? {},
     drafts: MathPractice.cleanDrafts(stored.drafts),
     minutes: [10, 15, 20].includes(stored.minutes) ? stored.minutes : 15,
     lastGoal: stored.lastGoal ?? null,
   };
-  const firstOpen = () => {
-    const index = etapas.findIndex(stage => !progress.passed.includes(stage.id));
-    return index < 0 ? etapas.length : index;
-  };
+  // The old dataset started at M03/M06. Keep those completions while
+  // progressing through the corrected M00–M13, S01–S10 ordering.
+  const firstOpen = () => TrailProgress.nextRecommended(etapas, progress.passed);
+  const canOpen = index => TrailProgress.canOpen(etapas, progress.passed, index);
+  const isComplete = id => TrailProgress.completed(etapas, progress.passed, id);
   let selected = Math.min(firstOpen(), etapas.length - 1);
   let attempt = 0;
   let durable = true;
@@ -37,7 +38,7 @@
   }
 
   function updateStatus() {
-    const count = firstOpen();
+    const count = TrailProgress.completedCount(etapas, progress.passed);
     get("estado-trilha").textContent = count + " de " + etapas.length + " etapas concluídas na trilha. " +
       (durable ? "Progresso salvo neste navegador." : "O armazenamento está indisponível. Progresso válido nesta sessão.");
   }
@@ -77,7 +78,7 @@
   }
 
   function switchStage(index) {
-    if (index > firstOpen() || index >= etapas.length) return;
+    if (!canOpen(index)) return;
     goToView("trilha");
     get("acesso-etapa").textContent = "";
     selected = index;
@@ -98,13 +99,13 @@
         section.append(element("h2", index === 0 ? "Nivelamento" : "Desafios dos semestres"), group);
         nodes.push(section);
       }
-      const passed = index < firstOpen();
+      const passed = isComplete(stage.id);
       const button = element("button", "", "stage-choice");
       const name = element("span", stageTitle(stage), "stage-name");
       name.prepend(element("span", stage.id, "stage-code"), " ");
       button.append(name);
       button.type = "button";
-      button.disabled = index > firstOpen();
+      button.disabled = !canOpen(index);
       if (index === selected) button.setAttribute("aria-current", "step");
       button.append(element("small", passed ? "Concluída" : button.disabled ? "Bloqueada" : "Disponível"));
       button.addEventListener("click", () => switchStage(index));
@@ -156,7 +157,7 @@
 
   function renderActivity() {
     const stage = etapas[selected];
-    const alreadyPassed = selected < firstOpen();
+    const alreadyPassed = isComplete(stage.id);
     const title = element("h2", stage.id + " · " + stageTitle(stage));
     title.tabIndex = -1;
     const example = element("details");
@@ -245,14 +246,14 @@
     checked.addEventListener("change", () => { quiz.hidden = graded || !checked.checked || !hasPracticeAnswer(); });
     quiz.addEventListener("submit", event => {
       event.preventDefault();
-      if (graded || !checked.checked || !hasPracticeAnswer() || resolution.hidden || selected > firstOpen()) return;
+      if (graded || !checked.checked || !hasPracticeAnswer() || resolution.hidden || !canOpen(selected)) return;
       const responses = new FormData(quiz);
       const answers = stage.quiz.map((_, index) => responses.get("q" + index));
       if (answers.some((answer, index) => !stage.quiz[index].slice(1, 5).includes(answer))) return;
       graded = true;
       const score = answers.filter((answer, index) => answer === stage.quiz[index][1]).length;
       const passedNow = score === stage.quiz.length;
-      const newCompletion = passedNow && selected === firstOpen();
+      const newCompletion = passedNow && !isComplete(stage.id) && canOpen(selected);
       if (newCompletion) {
         progress.passed.push(stage.id);
         progress.reviews[stage.id] = { round: 0, due: today() + reviewGaps[0] };
@@ -349,7 +350,7 @@
     const index = etapas.findIndex(stage => stage.id === reference.dataset.studyStage);
     if (index < 0) return;
     const message = get("acesso-etapa");
-    if (index <= firstOpen()) {
+    if (canOpen(index)) {
       message.textContent = "";
       switchStage(index);
     } else {
@@ -360,7 +361,9 @@
   window.addEventListener("cloud:applied", event => {
     if (!event.detail.keys.includes(key)) return;
     const saved = readLocal(key, {});
-    progress.passed = Array.isArray(saved.passed) ? saved.passed : [];
+    progress.passed = TrailProgress.recoverPassed(etapas, saved.passed, saved.attempts);
+    const recoveredFromQuiz = progress.passed.length >
+      (Array.isArray(saved.passed) ? saved.passed.length : 0);
     progress.reviews = saved.reviews ?? {};
     progress.attempts = saved.attempts ?? {};
     progress.drafts = MathPractice.cleanDrafts(saved.drafts);
@@ -369,9 +372,10 @@
     const practiceInput = get("atividade").querySelector("textarea.practice-response");
     const mathHost = get("atividade").querySelector("[data-math-editor]");
     const hasDraft = MathPractice.hasAnswer(practiceInput?.value, mathHost?.dataset.latex);
-    if (selected > firstOpen()) selected = Math.min(firstOpen(), etapas.length - 1);
-    if (!hasDraft) {
-      selected = Math.min(firstOpen(), etapas.length - 1);
+    const selectionWasLocked = !canOpen(selected);
+    if (selectionWasLocked) selected = Math.min(firstOpen(), etapas.length - 1);
+    if (!hasDraft || selectionWasLocked) {
+      if (!selectionWasLocked) selected = Math.min(firstOpen(), etapas.length - 1);
       renderActivity();
     }
     get("tempo-meta").value = String(progress.minutes);
@@ -379,6 +383,7 @@
     updateGoal();
     renderOutline();
     renderReviews();
+    if (recoveredFromQuiz) persist();
   });
 
   get("tempo-meta").value = String(progress.minutes);
@@ -400,4 +405,6 @@
   renderActivity();
   renderReviews();
   updateGoal();
+  // Persist only when we can prove a formerly missing completion using 3/3 answers.
+  if (progress.passed.length > (Array.isArray(stored.passed) ? stored.passed.length : 0)) persist();
 })();
