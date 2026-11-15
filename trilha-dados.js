@@ -243,4 +243,6 @@ const etapas = [
    ["A potência passa de 5 para 6 mW. Qual é o aumento relativo?","20%","16,7%","1%","120%","A diferença de 1 mW é dividida por 5 mW."],
    ["Qual entrega favorece a reprodução do resultado?","Dados, arquivos e passos com versões","Apenas os slides da defesa","Um gráfico sem escala","O número final sem contexto","Os arquivos e passos permitem repetir a análise e conferir os dados."]],
 ].map(([id, goal, theory, example, curiosity, task, solution, recall, answer, ...quiz]) =>
-  ({ id, goal, theory, example, curiosity, task, solution, recall, answer, quiz }));
+  ({ id, goal, theory, example, curiosity, task, solution, recall, answer, quiz }))
+  // Sequência do curso: M00–M13, depois S01–S10. O código antigo tinha M03 e M06 primeiro.
+  .sort((a, b) => a.id.localeCompare(b.id));
