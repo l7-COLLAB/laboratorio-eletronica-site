@@ -175,10 +175,11 @@
     const mathHost = element("div", "", "math-editor");
     let mathEditor = null;
     const savedLatex = progress.drafts[stage.id]?.latex ?? "";
-    const hasPracticeAnswer = () => MathPractice.hasAnswer(input.value, mathEditor?.getValue() ?? savedLatex);
+    let drawingEditor = null;
+    const hasPracticeAnswer = () => MathPractice.hasAnswer(input.value, mathEditor?.getValue() ?? savedLatex, drawingEditor?.getValue() ?? progress.drafts[stage.id]?.drawing);
     function updatePractice() {
       const latex = mathEditor?.getValue() ?? savedLatex;
-      progress.drafts = MathPractice.saveDraft(progress.drafts, stage.id, input.value, latex);
+      progress.drafts = MathPractice.saveDraft(progress.drafts, stage.id, input.value, latex, drawingEditor?.getValue() ?? progress.drafts[stage.id]?.drawing ?? "");
       persist();
       const answered = hasPracticeAnswer();
       reveal.disabled = !answered || !resolution.hidden;
@@ -189,6 +190,10 @@
     }
     if (MathPractice.supportsMath(stage.id)) {
       mathEditor = createMathEditor(mathHost, { initialLatex: savedLatex, onChange: updatePractice });
+    }
+    const drawingHost = element("div", "", "drawing-host");
+    if (typeof createDrawingEditor === "function" && /desenh|esbo[cç]|trace (?:um |o )?gr[aá]fico|fa[cç]a (?:um |o )?diagrama/i.test(stage.task)) {
+      drawingEditor = createDrawingEditor(drawingHost, { initial: progress.drafts[stage.id]?.drawing ?? "", onChange: updatePractice });
     }
     const reveal = action("Comparar com a resolução");
     reveal.disabled = !hasPracticeAnswer();
@@ -297,6 +302,7 @@
     questions();
     practice.append(label);
     if (MathPractice.supportsMath(stage.id)) practice.append(mathHost);
+    if (drawingEditor) practice.append(drawingHost);
     practice.append(reveal, resolution, checkLabel);
     const activity = get("atividade");
     activity.replaceChildren(status, title, element("p", stage.goal), theory,
@@ -371,7 +377,8 @@
     progress.lastGoal = saved.lastGoal ?? null;
     const practiceInput = get("atividade").querySelector("textarea.practice-response");
     const mathHost = get("atividade").querySelector("[data-math-editor]");
-    const hasDraft = MathPractice.hasAnswer(practiceInput?.value, mathHost?.dataset.latex);
+    const drawingHost = get("atividade").querySelector("[data-drawing-editor]");
+    const hasDraft = MathPractice.hasAnswer(practiceInput?.value, mathHost?.dataset.latex, drawingHost?.dataset.drawing);
     const selectionWasLocked = !canOpen(selected);
     if (selectionWasLocked) selected = Math.min(firstOpen(), etapas.length - 1);
     if (!hasDraft || selectionWasLocked) {
