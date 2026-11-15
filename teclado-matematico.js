@@ -53,6 +53,9 @@
     let requestedFocus = false;
     let readyPromise = null;
     let opened = false;
+    // MathLive rebuilds its virtual keyboard when layouts are assigned.
+    // Do not reset the user's alphabetic/symbolic selection on every focus.
+    let keyboardConfigured = false;
 
     host.dataset.mathEditor = "true";
     host.dataset.latex = latex;
@@ -89,8 +92,11 @@
       const keyboard = mathKeyboard();
       if (!keyboard) return;
       try {
-        keyboard.layouts = ["numeric", "symbols", "alphabetic", "greek"];
-        keyboard.show();
+        if (!keyboardConfigured) {
+          keyboard.layouts = ["numeric", "symbols", "alphabetic", "greek"];
+          keyboardConfigured = true;
+        }
+        if (!keyboard.visible) keyboard.show();
       } catch {
         // MathLive still handles the keyboard automatically on mobile.
       }
@@ -145,7 +151,9 @@
       field = document.createElement("math-field");
       field.className = "math-editor-field";
       field.setAttribute("aria-label", "Digite sua expressão matemática");
-      field.setAttribute("math-virtual-keyboard-policy", "auto");
+      // Use one controller for the keyboard on iOS: the focus handler below.
+      // Auto plus an explicit show() can race with Safari focus/scroll handling.
+      field.setAttribute("math-virtual-keyboard-policy", isTouchDevice() ? "manual" : "auto");
       field.setAttribute("placeholder", "?");
       field.addEventListener("input", record);
       field.addEventListener("focusin", showKeyboard);

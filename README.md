@@ -75,6 +75,12 @@ Os atalhos abaixo do campo permitem fração, potência, expoente fracionário, 
 Se a biblioteca MathLive não puder ser carregada, a resposta por texto permanece utilizável. Os testes de automação conferem os eventos de foco, exibição e fechamento do teclado em simulação; o comportamento no Safari físico do iPhone 11 exige homologação no dispositivo.
 
 
+### Correção de foco no teclado do iPhone (15/11/2026)
+
+O controle do teclado matemático usa política manual nos dispositivos touch, evitando a dupla abertura automática + programática. A lista de layouts é configurada apenas uma vez por editor, para não reconstruir o painel quando o foco retorna ao campo depois de selecionar as letras. O campo deixa de criar uma região própria de rolagem horizontal, reduzindo o salto de posição no Safari. Há teste de regressão para a seleção alfabética. Os rascunhos e dados da nuvem não são alterados.
+
+A correção depende de confirmação no iPhone 11 real, especialmente alternar para Letras, inserir uma variável, voltar a Números, abrir e fechar o teclado e verificar a rolagem da página.
+
 ## Login recorrente e salvamento de progresso na nuvem (15/11/2026)
 
 - O Laboratório é de uso individual: **a conta já cadastrada permanece a mesma**. Não é preciso repetir o primeiro acesso. A criação de conta só é oferecida quando há um convite inicial válido e o usuário escolhe explicitamente essa opção.
