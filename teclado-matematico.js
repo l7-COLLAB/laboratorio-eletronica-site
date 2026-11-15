@@ -76,7 +76,7 @@
     const toggle = document.createElement("button");
     toggle.type = "button";
     toggle.className = "button math-editor-open";
-    toggle.textContent = latex ? "Editar expressão matemática" : "Abrir teclado matemático";
+    toggle.textContent = latex ? "Editar expressão matemática" : "Toque para responder com matemática";
     const status = document.createElement("p");
     status.className = "math-editor-status";
     status.setAttribute("role", "status");
@@ -180,7 +180,14 @@
       }
     }
     toggle.addEventListener("click", open);
-    return { getValue() { return field ? field.value : latex; } };
+    // On touch devices, tapping the mathematical answer area opens the keypad
+    // without requiring the student to find the separate toggle button.
+    host.addEventListener("click", event => {
+      if (event.target === host || event.target === title || event.target === help) {
+        if (content.hidden) open();
+      }
+    });
+    return { open, getValue() { return field ? field.value : latex; } };
   }
   window.createMathEditor = createMathEditor;
 })();
