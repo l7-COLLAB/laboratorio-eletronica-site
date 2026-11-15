@@ -6,10 +6,11 @@
   ]);
   const MAX_TEXT = 1000;
   const MAX_LATEX = 800;
+  const MAX_DRAWING = 16000;
   function supportsMath(id) { return mathStages.has(id); }
   function validStage(id) { return /^(M(?:0[0-9]|1[0-3])|S(?:0[1-9]|10))$/.test(id); }
-  function hasAnswer(text, latex) {
-    return Boolean((typeof text === "string" && text.trim()) || (typeof latex === "string" && latex.trim()));
+  function hasAnswer(text, latex, drawing) {
+    return Boolean((typeof text === "string" && text.trim()) || (typeof latex === "string" && latex.trim()) || (typeof drawing === "string" && drawing.length > 4));
   }
   function cleanDrafts(drafts) {
     const result = {};
@@ -18,18 +19,20 @@
       if (!validStage(id) || !draft || typeof draft !== "object" || Array.isArray(draft)) continue;
       const text = typeof draft.text === "string" ? draft.text.slice(0, MAX_TEXT) : "";
       const latex = supportsMath(id) && typeof draft.latex === "string" ? draft.latex.slice(0, MAX_LATEX) : "";
-      if (hasAnswer(text, latex)) result[id] = { text, latex };
+      const drawing = typeof draft.drawing === "string" && draft.drawing.length <= MAX_DRAWING && /^\[\[/.test(draft.drawing) ? draft.drawing : "";
+      if (hasAnswer(text, latex, drawing)) result[id] = { text, latex, drawing };
     }
     return result;
   }
-  function saveDraft(drafts, id, text, latex) {
+  function saveDraft(drafts, id, text, latex, drawing = "") {
     const next = cleanDrafts(drafts);
     if (!validStage(id)) return next;
     const entry = {
       text: typeof text === "string" ? text.slice(0, MAX_TEXT) : "",
-      latex: supportsMath(id) && typeof latex === "string" ? latex.slice(0, MAX_LATEX) : ""
+      latex: supportsMath(id) && typeof latex === "string" ? latex.slice(0, MAX_LATEX) : "",
+      drawing: typeof drawing === "string" && drawing.length <= MAX_DRAWING && /^\[\[/.test(drawing) ? drawing : ""
     };
-    if (hasAnswer(entry.text, entry.latex)) next[id] = entry;
+    if (hasAnswer(entry.text, entry.latex, entry.drawing)) next[id] = entry;
     else delete next[id];
     return next;
   }
