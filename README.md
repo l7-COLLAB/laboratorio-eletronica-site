@@ -73,3 +73,15 @@ O teclado da resposta matemática é um painel virtual do MathLive exibido pelo 
 Os atalhos abaixo do campo permitem fração, potência, expoente fracionário, raiz quadrada, raiz com índice e π, inclusive no celular. No computador continua disponível o teclado físico. Não há alteração do endpoint, das chaves de sincronização, de autenticação ou do histórico da calculadora; a expressão continua salva no rascunho do exercício.
 
 Se a biblioteca MathLive não puder ser carregada, a resposta por texto permanece utilizável. Os testes de automação conferem os eventos de foco, exibição e fechamento do teclado em simulação; o comportamento no Safari físico do iPhone 11 exige homologação no dispositivo.
+
+
+## Login recorrente e salvamento de progresso na nuvem (15/11/2026)
+
+- O Laboratório é de uso individual: **a conta já cadastrada permanece a mesma**. Não é preciso repetir o primeiro acesso. A criação de conta só é oferecida quando há um convite inicial válido e o usuário escolhe explicitamente essa opção.
+- Depois de sair, expirar a sessão ou abrir o site como aplicativo na tela inicial do iPhone, toque em **Nuvem → Entrar na minha conta** e use o usuário e senha existentes. As sessões ativas no mesmo navegador são mantidas enquanto válidas.
+- O progresso é salvo primeiro em \`localStorage\` e, com uma sessão autenticada, a fila do \`nuvem.js\` envia as alterações ao Worker Cloudflare e ao D1 existente. A mensagem “Tudo sincronizado com a nuvem” só aparece após uma sincronização com resposta de sucesso.
+- O recurso \`progresso-sync-core.js\` concilia módulos concluídos, quizzes e respostas de módulos distintos de Safari e do app da tela inicial. Em caso de duas respostas livres incompatíveis na mesma atividade, exige decisão explícita em vez de descartar uma delas.
+- O servidor atual usa **uma conta pessoal**, não um sistema multiusuário. A atualização não altera credenciais, tokens, D1, tabelas, endpoints ou sessões anteriores. O acesso por nome de usuário e senha recupera os mesmos registros.
+- Para conferir: conectar o iPhone na tela Nuvem, esperar a confirmação, fechar e reabrir, verificar os módulos concluídos; se instalado na tela inicial, fazer login nessa instalação separadamente uma vez.
+- Segurança: não limpar os dados locais antes de confirmar sincronização, nem compartilhar a senha. Em caso de conflito, ler ambas as versões antes de escolher.
+- Testes automatizados: \`node --test test-progresso-sync.cjs test-login-retorno.cjs test-sync.cjs test-worker.mjs\`.
