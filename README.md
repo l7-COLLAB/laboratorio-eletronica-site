@@ -66,6 +66,10 @@ Frontend servido pelo GitHub Pages a partir de `main`, na estrutura existente. O
 - Marcar um módulo como “revisado” no índice não equivale a passar no quiz (que exige três acertos).
 - Executar `node --test test-trilha-progress.cjs` junto com a suíte de regressão da calculadora, sincronização e Worker.
 
+## Calculadora científica sem teclado nativo no iPhone (15/11/2026)
+
+A calculadora em `#calculadora` é diferente do teclado matemático das práticas. No iPhone, o campo `calc-expressao` passa a ser `readonly` com `inputmode=none`; os botões da calculadora inserem, apagam e reutilizam expressões diretamente sem forçar foco e sem abrir o teclado do iOS. O campo continua selecionável para posicionar o cursor. Em computadores sem toque, a inicialização remove `readonly` e mantém digitação física, Enter e Esc. O rascunho da expressão não passa a ser sincronizado; o histórico continua com a mesma chave e regras de armazenamento já existentes. Testes `test-calculadora-mobile.cjs` cobrem ambas as modalidades, inclusão/remoção e a ausência de foco programático no celular. Confirmar visualmente no iPhone físico após publicar e reabrir o PWA.
+
 ## Teclado matemático no iPhone (15/11/2026)
 
 O teclado da resposta matemática é um painel virtual do MathLive exibido pelo navegador, semelhante à experiência de exercícios da Khan Academy: sites não conseguem modificar o teclado nativo do iOS. A partir desta atualização, nos módulos com cálculo, o **campo matemático é a resposta principal** e aparece antes da explicação textual (opcional). Toque no campo para abrir automaticamente o teclado matemático na parte inferior da tela; ele usa layouts numérico, símbolos e letras. O botão **Concluir expressão** fecha o teclado sem apagar a resposta, e um novo toque reabre a edição.
