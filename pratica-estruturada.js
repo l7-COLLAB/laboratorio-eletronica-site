@@ -49,6 +49,8 @@
     const section=document.createElement("section");
     section.className="structured-practice";
     section.dataset.structuredPractice=id;
+    const hasData=()=>spec.fields.some(f=>Boolean((state[f.id]||"").trim()));
+    section.dataset.hasDraft=String(hasData());
     const title=document.createElement("h3");
     title.textContent=spec.title;
     const help=document.createElement("p");
@@ -68,6 +70,7 @@
     if (spec.kind==="truth") controls.classList.add("structured-truth");
     const editors={};
     const notify=()=>{
+      section.dataset.hasDraft=String(hasData());
       feedback.textContent="Resposta registrada. Use Corrigir atividade para conferir os campos objetivos.";
       renderPreview();
       onChange();
