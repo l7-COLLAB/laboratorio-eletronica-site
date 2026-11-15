@@ -3,22 +3,51 @@
 (() => {
   const KEY = CalcHistory.KEY, MAX = CalcHistory.MAX;
   const $ = id => document.getElementById(id);
-  const field = $("calc-expressao"), result = $("calc-resultado"), status = $("calc-status"),
+  const display = $("calc-expressao"), result = $("calc-resultado"), status = $("calc-status"),
         list = $("calc-historico"), mode = $("calc-angulo");
-  if (!field || !window.EletronicaCalc) return;
-  // On touchscreens, the integrated calculator keys are the only input UI.
-  // iOS does not consistently honor inputmode=none for editable inputs;
-  // readonly is required to prevent the system keyboard from covering the keys.
-  const isTouchCalculator = (typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches) ||
-    (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0);
-  field.readOnly = isTouchCalculator;
-  field.inputMode = isTouchCalculator ? "none" : "text";
-  const touchTip = $("calc-touch-tip");
-  if (touchTip) touchTip.hidden = !isTouchCalculator;
-  function focusExpression() {
-    // Focusing an editable input on iOS opens the native keyboard over the calculator.
-    if (!isTouchCalculator) field.focus({preventScroll:true});
+  if (!display || !window.EletronicaCalc) return;
+  // A passive DIV, never an INPUT/contenteditable node. This works even in
+  // embedded iOS browsers that misreport touch support and ignore inputmode=none.
+  // Preserve cursor editing and physical desktop typing with a JS-only model.
+  const field = {
+    _value: "", selectionStart: 0, selectionEnd: 0,
+    get value() { return this._value; },
+    set value(value) {
+      this._value = String(value).slice(0, 180);
+      this.selectionStart = this.selectionEnd = this._value.length;
+      paint();
+    },
+    setRangeText(text, start, end) {
+      start = Math.max(0, Math.min(this._value.length, start));
+      end = Math.max(start, Math.min(this._value.length, end));
+      const candidate = this._value.slice(0, start) + text + this._value.slice(end);
+      if (candidate.length > 180) {
+        status.textContent = "A expressão pode ter no máximo 180 caracteres.";
+        return;
+      }
+      this._value = candidate;
+      this.selectionStart = this.selectionEnd = start + text.length;
+      paint();
+    },
+    setSelectionRange(start, end) {
+      this.selectionStart = Math.max(0, Math.min(this._value.length, start));
+      this.selectionEnd = Math.max(this.selectionStart, Math.min(this._value.length, end));
+      paint();
+    }
+  };
+  function paint() {
+    const caret = document.createElement("span");
+    caret.className = "calc-caret";
+    caret.setAttribute("aria-hidden", "true");
+    display.replaceChildren(
+      document.createTextNode(field.value.slice(0, field.selectionStart)),
+      caret,
+      document.createTextNode(field.value.slice(field.selectionEnd))
+    );
+    display.dataset.empty = String(!field.value);
+    display.setAttribute("aria-label", "Expressão: " + (field.value || "vazia"));
   }
+  paint();
   let last = 0;
   function state() {
     try { return CalcHistory.normalize(JSON.parse(localStorage.getItem(KEY) || '{}')); }
@@ -47,14 +76,13 @@
       const li = document.createElement('li'), button = document.createElement('button'), small = document.createElement('small');
       button.className='calc-reuse'; button.type='button'; button.textContent=row.expr + ' = ' + EletronicaCalc.format(row.result);
       button.title='Reutilizar o cálculo';
-      button.addEventListener('click', () => { field.value=row.expr; result.textContent=EletronicaCalc.format(row.result); mode.value=row.mode || 'deg';field.setSelectionRange(field.value.length,field.value.length);focusExpression(); });
+      button.addEventListener('click', () => { field.value=row.expr; result.textContent=EletronicaCalc.format(row.result); mode.value=row.mode || 'deg'; });
       small.textContent = new Date(row.at).toLocaleString('pt-BR') + ' · ' + (row.mode === 'rad' ? 'RAD' : 'DEG');
       li.append(button,small);list.append(li);
     }
   }
   function put(value) {
-    field.setRangeText(value, field.selectionStart ?? field.value.length, field.selectionEnd ?? field.value.length, 'end');
-    focusExpression();
+    field.setRangeText(value, field.selectionStart, field.selectionEnd);
   }
   document.querySelectorAll('[data-calc-insert]').forEach(btn => btn.addEventListener('click', () => put(btn.dataset.calcInsert)));
   $('calc-calcular').addEventListener('click', () => {
@@ -69,17 +97,47 @@
       save(current => CalcHistory.merge(current, {clear: current.clear, entries: [{id: crypto.randomUUID(), expr: expanded, result: value, at, mode: unit}]}));
     } catch(error) { result.textContent='Erro';status.textContent=error.message; }
   });
-  $('calc-limpar').addEventListener('click', () => {field.value='';result.textContent='0';status.textContent='';focusExpression();});
+  $('calc-limpar').addEventListener('click', () => {field.value='';result.textContent='0';status.textContent='';});
   $('calc-apagar').addEventListener('click', () => {
     const a=field.selectionStart??field.value.length,b=field.selectionEnd??field.value.length;
-    field.setRangeText('',a===b?Math.max(0,a-1):a,b,'end');focusExpression();
+    field.setRangeText('',a===b?Math.max(0,a-1):a,b);
   });
   $('calc-apagar-historico').addEventListener('click', () => {
     if (confirm('Apagar o histórico deste aparelho e da nuvem? Após sincronizar, as contas anteriores também serão removidas nos outros aparelhos.')) { save(() => ({clear: new Date().toISOString(), entries: []})); result.textContent='0'; }
   });
-  field.addEventListener('keydown', e => {
-    if(e.key==='Enter'){e.preventDefault();$('calc-calcular').click();}
-    if(e.key==='Escape'){e.preventDefault();$('calc-limpar').click();}
+  $("calc-cursor-left").addEventListener("click", () =>
+    field.setSelectionRange(Math.max(0, field.selectionStart - 1), Math.max(0, field.selectionStart - 1)));
+  $("calc-cursor-right").addEventListener("click", () =>
+    field.setSelectionRange(Math.min(field.value.length, field.selectionEnd + 1), Math.min(field.value.length, field.selectionEnd + 1)));
+  // Physical keyboards work without ever creating an editable browser input.
+  document.addEventListener("keydown", e => {
+    const view = $("calculadora");
+    if (!view || view.hidden || e.ctrlKey || e.metaKey || e.altKey) return;
+    const target = e.target;
+    if (target && (/^(INPUT|TEXTAREA|SELECT)$/.test(target.tagName || "") || target.isContentEditable)) return;
+    if (e.key === "Enter" && !/^(BUTTON|A|SUMMARY)$/.test(target?.tagName || "")) {
+      e.preventDefault(); $("calc-calcular").click(); return;
+    }
+    if (e.key === "Escape") {
+      e.preventDefault(); $("calc-limpar").click(); return;
+    }
+    if (e.key === "ArrowLeft" || e.key === "ArrowRight" || e.key === "Home" || e.key === "End") {
+      if (target?.tagName === "BUTTON" || target?.tagName === "A") return;
+      const cursor = e.key === "Home" ? 0 : e.key === "End" ? field.value.length
+        : e.key === "ArrowLeft" ? Math.max(0, field.selectionStart - 1)
+        : Math.min(field.value.length, field.selectionEnd + 1);
+      field.setSelectionRange(cursor, cursor);
+      e.preventDefault(); return;
+    }
+    if (e.key === "Backspace" || e.key === "Delete") {
+      const a = field.selectionStart, b = field.selectionEnd;
+      if (e.key === "Backspace") field.setRangeText("", a === b ? Math.max(0, a - 1) : a, b);
+      else field.setRangeText("", a, a === b ? Math.min(field.value.length, b + 1) : b);
+      e.preventDefault(); return;
+    }
+    if (/^[0-9a-z+*/^%().,!\\-]$/i.test(e.key)) {
+      put(e.key); e.preventDefault();
+    }
   });
   window.addEventListener('storage',event=>{if(event.key===KEY)redraw();});
   window.addEventListener('cloud:applied',event=>{if(event.detail.keys.includes(KEY))redraw();});
