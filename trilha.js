@@ -178,10 +178,11 @@
     let mathEditor = null;
     const savedLatex = progress.drafts[stage.id]?.latex ?? "";
     let drawingEditor = null;
-    const hasPracticeAnswer = () => MathPractice.hasAnswer(input.value, mathEditor?.getValue() ?? savedLatex, drawingEditor?.getValue() ?? progress.drafts[stage.id]?.drawing);
+    let diagramEditor = null;
+    const hasPracticeAnswer = () => (diagramEditor ? diagramEditor.validate().correct : MathPractice.hasAnswer(input.value, mathEditor?.getValue() ?? savedLatex, drawingEditor?.getValue() ?? progress.drafts[stage.id]?.drawing));
     function updatePractice() {
       const latex = mathEditor?.getValue() ?? savedLatex;
-      progress.drafts = MathPractice.saveDraft(progress.drafts, stage.id, input.value, latex, drawingEditor?.getValue() ?? progress.drafts[stage.id]?.drawing ?? "");
+      progress.drafts = MathPractice.saveDraft(progress.drafts, stage.id, input.value, latex, drawingEditor?.getValue() ?? progress.drafts[stage.id]?.drawing ?? "", diagramEditor?.getValue() ?? progress.drafts[stage.id]?.diagram ?? "");
       persist();
       const answered = hasPracticeAnswer();
       reveal.disabled = !answered || !resolution.hidden;
@@ -193,8 +194,10 @@
     if (MathPractice.supportsMath(stage.id)) {
       mathEditor = createMathEditor(mathHost, { initialLatex: savedLatex, onChange: updatePractice });
     }
+    const diagramHost = element("div", "", "diagram-host");
+    if (stage.id === "M06" && typeof createTriangleExercise === "function") diagramEditor = createTriangleExercise(diagramHost, {initial: progress.drafts[stage.id]?.diagram ?? "", onChange: updatePractice});
     const drawingHost = element("div", "", "drawing-host");
-    if (typeof createDrawingEditor === "function" && /desenh|esbo[cç]|trace (?:um |o )?gr[aá]fico|fa[cç]a (?:um |o )?diagrama/i.test(stage.task)) {
+    if (!diagramEditor && typeof createDrawingEditor === "function" && /desenh|esbo[cç]|trace (?:um |o )?gr[aá]fico|fa[cç]a (?:um |o )?diagrama/i.test(stage.task)) {
       drawingEditor = createDrawingEditor(drawingHost, { initial: progress.drafts[stage.id]?.drawing ?? "", onChange: updatePractice });
     }
     const reveal = action("Comparar com a resolução");
@@ -304,6 +307,7 @@
     questions();
     if (MathPractice.supportsMath(stage.id)) practice.append(mathHost);
     practice.append(label);
+    if (diagramEditor) practice.append(diagramHost);
     if (drawingEditor) practice.append(drawingHost);
     practice.append(reveal, resolution, checkLabel);
     const activity = get("atividade");
@@ -380,7 +384,7 @@
     const practiceInput = get("atividade").querySelector("textarea.practice-response");
     const mathHost = get("atividade").querySelector("[data-math-editor]");
     const drawingHost = get("atividade").querySelector("[data-drawing-editor]");
-    const hasDraft = MathPractice.hasAnswer(practiceInput?.value, mathHost?.dataset.latex, drawingHost?.dataset.drawing);
+    const hasDraft = MathPractice.hasAnswer(practiceInput?.value, mathHost?.dataset.latex, drawingHost?.dataset.drawing) || Boolean(get("atividade").querySelector("[data-triangle-exercise]"));
     const selectionWasLocked = !canOpen(selected);
     if (selectionWasLocked) selected = Math.min(firstOpen(), etapas.length - 1);
     if (!hasDraft || selectionWasLocked) {
