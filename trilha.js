@@ -214,7 +214,7 @@
         quiz.hidden = true;
       }
     }
-    if (MathPractice.supportsMath(stage.id)) {
+    if (MathPractice.supportsMath(stage.id) && !usesStructured) {
       mathEditor = createMathEditor(mathHost, { initialLatex: savedLatex, onChange: updatePractice });
     }
     const diagramHost = element("div", "", "diagram-host");
@@ -365,7 +365,7 @@
       if(progress.resume.phase === "resultado" && alreadyPassed) onward.hidden=selected+1>=etapas.length;
       if(progress.resume.phase === "resultado" && !alreadyPassed) quiz.hidden=false;
     }
-    if (MathPractice.supportsMath(stage.id)) practice.append(mathHost);
+    if (MathPractice.supportsMath(stage.id) && !usesStructured) practice.append(mathHost);
     practice.append(label);
     if (diagramEditor) practice.append(diagramHost);
     if (drawingEditor) practice.append(drawingHost);
@@ -460,7 +460,10 @@
     const practiceInput = get("atividade").querySelector("textarea.practice-response");
     const mathHost = get("atividade").querySelector("[data-math-editor]");
     const drawingHost = get("atividade").querySelector("[data-drawing-editor]");
-    const hasDraft = MathPractice.hasAnswer(practiceInput?.value, mathHost?.dataset.latex, drawingHost?.dataset.drawing) || Boolean(get("atividade").querySelector("[data-triangle-exercise]"));
+    const structuredHost = get("atividade").querySelector("[data-structured-practice]");
+    const hasDraft = MathPractice.hasAnswer(practiceInput?.value, mathHost?.dataset.latex, drawingHost?.dataset.drawing) ||
+      Boolean(get("atividade").querySelector("[data-triangle-exercise]")) ||
+      structuredHost?.dataset.hasDraft === "true";
     const selectionWasLocked = !canOpen(selected);
     if (selectionWasLocked) selected = Math.min(firstOpen(), etapas.length - 1);
     if (!hasDraft || selectionWasLocked) {
