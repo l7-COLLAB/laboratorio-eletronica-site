@@ -135,7 +135,7 @@
       else field.setRangeText("", a, a === b ? Math.min(field.value.length, b + 1) : b);
       e.preventDefault(); return;
     }
-    if (/^[0-9a-z+*/^%().,!\\-]$/i.test(e.key)) {
+    if (e.key.length === 1 && "0123456789abcdefghijklmnopqrstuvwxyz+-*/^%().,!".includes(e.key.toLowerCase())) {
       put(e.key); e.preventDefault();
     }
   });
