@@ -362,6 +362,8 @@
     if (!event.detail.keys.includes(key)) return;
     const saved = readLocal(key, {});
     progress.passed = TrailProgress.recoverPassed(etapas, saved.passed, saved.attempts);
+    const recoveredFromQuiz = progress.passed.length >
+      (Array.isArray(saved.passed) ? saved.passed.length : 0);
     progress.reviews = saved.reviews ?? {};
     progress.attempts = saved.attempts ?? {};
     progress.drafts = MathPractice.cleanDrafts(saved.drafts);
@@ -381,6 +383,7 @@
     updateGoal();
     renderOutline();
     renderReviews();
+    if (recoveredFromQuiz) persist();
   });
 
   get("tempo-meta").value = String(progress.minutes);
