@@ -48,7 +48,9 @@ function createTriangleExercise(host, {initial = "", onChange = () => {}} = {}) 
   };
   const refreshFigure = () => {
     svg.querySelectorAll(".geometry-value").forEach(node=>node.remove());
-    const locations={vertical:[30,125],horizontal:[166,216],diagonal:[185,99],angle:[280,181]};
+    const anglePosition={A:[82,59],B:[78,166],C:[280,181]};
+    const locations={vertical:[30,125],horizontal:[166,216],diagonal:[185,99],
+      angle:anglePosition[controls.angle.value] || [280,181]};
     for(const key of ["vertical","horizontal","diagonal","angle"]){
       if(!controls[key].value) continue;
       const el=document.createElementNS(svg.namespaceURI,"text");
