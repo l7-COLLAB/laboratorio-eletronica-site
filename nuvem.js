@@ -4,8 +4,10 @@ window.cloudSync = (() => {
   const endpoint = "https://laboratorio-eletronica-sync.l7526080.workers.dev";
   const prefix = "laboratorio-eletronica:";
   let setupTicket = new URLSearchParams(location.hash.slice(1)).get("configurar");
+  let showSetup = false;
   if (setupTicket) window.history.replaceState(null, "", "#nuvem");
   const authKey = prefix + "nuvem:codigo:v1";
+  const progressKey = prefix + "trilha:v1";
   const metaKey = prefix + "nuvem:estado:v1";
   const supported = new Set([
     prefix + "trilha:v1",
@@ -20,6 +22,7 @@ window.cloudSync = (() => {
   let retryTimer;
   let syncAgain = false;
   let persisted = true;
+  let verified = false;
   try {
     token = localStorage.getItem(authKey) ?? "";
     const stored = JSON.parse(localStorage.getItem(metaKey));
@@ -52,10 +55,13 @@ window.cloudSync = (() => {
   function idleStatus() {
     const conflicts = Object.keys(state.conflicts).length;
     const count = Object.keys(state.pending).length;
-    if (!token) return status("Entre com seu usuário e senha para salvar os estudos na nuvem.");
-    if (conflicts) return status("Há edições diferentes para conferir antes de sincronizar.");
-    if (count) return status("Alterações salvas neste aparelho, aguardando envio.");
-    status(persisted ? "Tudo sincronizado com a nuvem." : "Salvo na nuvem. Entre novamente se este navegador perder o acesso.");
+    if (!token) return status(count
+      ? "Salvo neste aparelho. Entre na sua conta para enviar o progresso à nuvem."
+      : "Entre com seu usuário e senha para recuperar e salvar seus estudos na nuvem.");
+    if (conflicts) return status("Há alterações diferentes entre aparelho e nuvem. Revise as opções abaixo.");
+    if (count) return status("Salvo neste aparelho. Aguardando confirmação da nuvem.");
+    if (!verified) return status("Conta conectada. Verificando seus dados na nuvem…");
+    status(persisted ? "Tudo sincronizado com a nuvem." : "Sincronizado nesta sessão, mas o armazenamento local está indisponível.");
   }
 
   function labelFor(key) {
@@ -107,6 +113,8 @@ window.cloudSync = (() => {
     if (response.status === 401) {
       if (code === token && !path.startsWith("/auth/")) {
         token = "";
+        verified = false;
+        showSetup = false;
         try { localStorage.removeItem(authKey); } catch {}
         updateConnectionUI();
       }
@@ -152,6 +160,39 @@ window.cloudSync = (() => {
     return true;
   }
 
+  function mergeStudyProgress(entry, keys) {
+    if (entry.key !== progressKey || typeof StudyProgressSync === "undefined") return false;
+    const currentValue = localStorage.getItem(entry.key);
+    if (currentValue === null) return false;
+    // Another device may already have uploaded exactly what we have locally.
+    if (currentValue === entry.value) {
+      state.base[entry.key] = entry.revision;
+      state.seen[entry.key] = entry.value;
+      delete state.pending[entry.key];
+      delete state.conflicts[entry.key];
+      return true;
+    }
+    let local, remote;
+    try {
+      local = JSON.parse(currentValue);
+      remote = JSON.parse(entry.value);
+    } catch { return false; }
+    const stages = typeof etapas !== "undefined" ? etapas : [];
+    const combined = StudyProgressSync.merge(local, remote, stages);
+    if (!combined) return false; // A real editing conflict requires user review.
+    const value = JSON.stringify(combined);
+    if (!applyValue(entry.key, value)) {
+      throw Object.assign(new Error("Libere espaço para recuperar o progresso."), {status: 507});
+    }
+    state.base[entry.key] = entry.revision;
+    state.seen[entry.key] = entry.value;
+    delete state.conflicts[entry.key];
+    if (value === entry.value) delete state.pending[entry.key];
+    else state.pending[entry.key] = {value, revision: entry.revision, id: crypto.randomUUID()};
+    keys.push(entry.key);
+    return true;
+  }
+
   async function pull() {
     const {entries} = await request("/state");
     const remote = new Map(entries.map(entry => [entry.key, entry]));
@@ -159,6 +200,7 @@ window.cloudSync = (() => {
     for (const key of supported) {
       const entry = remote.get(key);
       if (entry && mergeCalculations(entry, keys)) continue;
+      if (entry && mergeStudyProgress(entry, keys)) continue;
       let pending = state.pending[key];
       const localValue = localStorage.getItem(key);
       if (!pending && state.seen[key] !== undefined && localValue !== null && localValue !== state.seen[key]) {
@@ -210,6 +252,9 @@ window.cloudSync = (() => {
       const keys = [];
       mergeCalculations(response.current, keys);
       publishChanges(keys);
+    } else if (response.conflict && response.current?.key === progressKey &&
+               mergeStudyProgress(response.current, [])) {
+      publishChanges([progressKey]);
     } else if (response.conflict) {
       if (response.current?.value === pending.value) {
         if (currentPending?.id === pending.id) delete state.pending[key];
@@ -239,12 +284,14 @@ window.cloudSync = (() => {
       for (const [key, pending] of Object.entries(state.pending)) {
         if (!state.conflicts[key]) await push(key, pending);
       }
+      verified = true;
       renderConflicts();
       idleStatus();
       if (Object.keys(state.pending).some(key => !state.conflicts[key])) {
         retryTimer = setTimeout(sync, 1500);
       }
     } catch (error) {
+      verified = false;
       const permanent = [400, 401, 403, 413, 429, 507].includes(error.status);
       status(permanent ? error.message :
         "Sem conexão com a nuvem. Seus dados continuam neste aparelho e serão reenviados.");
@@ -301,22 +348,27 @@ window.cloudSync = (() => {
   }
 
   function updateConnectionUI() {
-    get("nuvem-conectado").hidden = !token;
-    get("nuvem-acesso").hidden = Boolean(token) && !setupTicket;
-    get("nuvem-criar").hidden = !setupTicket;
-    get("nuvem-login").hidden = Boolean(setupTicket);
-    get("nuvem-recuperar").hidden = Boolean(setupTicket);
+    const connected = Boolean(token);
+    const creating = !connected && Boolean(setupTicket) && showSetup;
+    get("nuvem-conectado").hidden = !connected;
+    get("nuvem-acesso").hidden = connected;
+    get("nuvem-login").hidden = connected || creating;
+    get("nuvem-criar").hidden = !creating;
+    get("nuvem-recuperar").hidden = connected || creating;
+    get("nuvem-mostrar-criar").hidden = connected || !setupTicket || creating;
   }
 
   async function adoptSession(value) {
     token = value;
+    verified = false;
+    showSetup = false;
+    setupTicket = null;
     try {
       localStorage.setItem(authKey, value);
     } catch {
       persisted = false;
     }
-    get("nuvem-acesso").hidden = true;
-    get("nuvem-conectado").hidden = false;
+    updateConnectionUI();
     await sync();
   }
 
@@ -357,14 +409,14 @@ window.cloudSync = (() => {
         body: JSON.stringify({username, password, ...(creating ? {ticket: setupTicket} : {})}),
       });
       form.reset();
-      if (creating) setupTicket = null;
       await adoptSession(result.token);
     } catch (error) {
       status(error.message);
       if (creating && [403, 409].includes(error.status)) {
-        get("nuvem-login").hidden = false;
-        get("nuvem-recuperar").hidden = false;
-        get("nuvem-criar").hidden = true;
+        // An old setup invitation must never block returning students.
+        showSetup = false;
+        setupTicket = null;
+        updateConnectionUI();
       }
     } finally {
       submit.disabled = false;
@@ -377,12 +429,11 @@ window.cloudSync = (() => {
     try {
       await request("/auth/logout", {method: "POST"});
       token = "";
+      verified = false;
+      setupTicket = null;
+      showSetup = false;
       localStorage.removeItem(authKey);
-      get("nuvem-acesso").hidden = false;
-      get("nuvem-criar").hidden = true;
-      get("nuvem-login").hidden = false;
-      get("nuvem-recuperar").hidden = false;
-      get("nuvem-conectado").hidden = true;
+      updateConnectionUI();
       idleStatus();
     } catch (error) {
       status(error.message);
@@ -429,6 +480,15 @@ window.cloudSync = (() => {
     get("nuvem-login").addEventListener("submit", passwordSignIn);
     get("nuvem-criar").addEventListener("submit", passwordSignIn);
     get("nuvem-sair").addEventListener("click", signOut);
+    get("nuvem-mostrar-criar").addEventListener("click", () => {
+      if (!setupTicket) return;
+      showSetup = true;
+      updateConnectionUI();
+    });
+    get("nuvem-voltar-login").addEventListener("click", () => {
+      showSetup = false;
+      updateConnectionUI();
+    });
     get("nuvem-historico-categoria").append(...noteCategories.map(category =>
       new Option(category, noteKey(category))));
     get("nuvem-historico-abrir").addEventListener("click", history);
@@ -441,10 +501,11 @@ window.cloudSync = (() => {
     const invitation = new URLSearchParams(location.hash.slice(1)).get("configurar");
     if (!invitation) return;
     setupTicket = invitation;
+    showSetup = false;
     window.history.replaceState(null, "", "#nuvem");
     showView("nuvem");
     updateConnectionUI();
-    status("Escolha seu nome de usuário e sua senha para conectar este aparelho.");
+    status("Já tem uma conta? Entre normalmente. O convite abaixo serve apenas para o primeiro acesso.");
   });
   window.addEventListener("online", sync);
   document.addEventListener("visibilitychange", () => {
