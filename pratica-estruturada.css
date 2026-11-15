@@ -1,0 +1,12 @@
+.structured-practice{border:1px solid var(--line);background:var(--bg);border-radius:.75rem;padding:.85rem;display:grid;gap:.7rem;min-width:0}
+.structured-practice h3{font-size:1.08rem}
+.structured-help,.structured-feedback{font-size:.88rem;line-height:1.5;color:var(--soft)}
+.structured-feedback{min-height:1.3em}
+.structured-fields{display:grid;grid-template-columns:repeat(auto-fit,minmax(min(100%,215px),1fr));gap:.65rem;min-width:0}
+.structured-fields label{display:flex;flex-direction:column;gap:.3rem;min-width:0;font-size:.87rem;color:var(--text)}
+.structured-fields select,.structured-fields textarea{display:block;width:100%;min-width:0;min-height:44px;border:1px solid var(--line);border-radius:.45rem;background:var(--panel);color:var(--text);font:inherit;font-size:16px;padding:.55rem}
+.structured-fields textarea{resize:vertical;line-height:1.4;min-height:70px}
+.structured-fields select:focus-visible,.structured-fields textarea:focus-visible{outline:2px solid var(--accent);outline-offset:2px}
+.structured-diagram{display:block;max-width:420px;width:100%;height:auto;min-height:180px;margin:0 auto;color:var(--text);border:1px solid var(--line);border-radius:.5rem;background:var(--panel)}
+.structured-practice>.button{justify-self:start;min-height:44px}
+@media(max-width:480px){.structured-practice{padding:.6rem}.structured-fields{grid-template-columns:1fr}.structured-diagram{min-height:140px}}
