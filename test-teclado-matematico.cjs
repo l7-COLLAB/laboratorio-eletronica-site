@@ -28,7 +28,7 @@ test("text inputs and math inputs stay independent and old progress fields survi
   const old = { passed: ["M03"], attempts: { M03: ["a", "b", "c"] },
     reviews: { M03: { round: 0, due: 20765 } } };
   const prose = MathPractice.saveDraft({}, "M00", "Minha meta", "ignored");
-  assert.deepEqual(prose.M00, { text: "Minha meta", latex: "", drawing: "" });
+  assert.deepEqual(prose.M00, { text: "Minha meta", latex: "", drawing: "", diagram: "" });
   const saved = { ...old, drafts: MathPractice.saveDraft(prose, "M06", "Cateto 5", "\\frac{5}{13}") };
   const restored = { ...saved, drafts: MathPractice.cleanDrafts(saved.drafts) };
   assert.deepEqual(restored.passed, old.passed);
