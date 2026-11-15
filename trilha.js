@@ -174,6 +174,7 @@
     const practice = block("Pratique sem consulta", stage.task);
     const numericHost = element("div");
     const usesStructured = Boolean(window.StructuredPracticeCore?.has(stage.id));
+    const needsStandaloneMath = MathPractice.supportsMath(stage.id) && !usesStructured && stage.id !== "M06";
     // Avoid duplicate questions: the new table/diagram replaces the older numeric widgets.
     // Existing numeric answers remain in progress.practiceAnswers for recovery.
     const numericEditor = usesStructured ? null : NumericPractice.create(numericHost,stage.id,progress.practiceAnswers?.[stage.id],answers=>{
@@ -214,7 +215,7 @@
         quiz.hidden = true;
       }
     }
-    if (MathPractice.supportsMath(stage.id) && !usesStructured) {
+    if (needsStandaloneMath) {
       mathEditor = createMathEditor(mathHost, { initialLatex: savedLatex, onChange: updatePractice });
     }
     const diagramHost = element("div", "", "diagram-host");
@@ -365,7 +366,7 @@
       if(progress.resume.phase === "resultado" && alreadyPassed) onward.hidden=selected+1>=etapas.length;
       if(progress.resume.phase === "resultado" && !alreadyPassed) quiz.hidden=false;
     }
-    if (MathPractice.supportsMath(stage.id) && !usesStructured) practice.append(mathHost);
+    if (needsStandaloneMath) practice.append(mathHost);
     practice.append(label);
     if (diagramEditor) practice.append(diagramHost);
     if (drawingEditor) practice.append(drawingHost);
