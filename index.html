@@ -16,7 +16,8 @@
   <script defer src="historico-core.js?v=20261112"></script>
   <script defer src="recursos.js?v=20261112"></script>
   <script defer src="calculadora-core.js?v=20261112"></script>
-  <script defer src="nuvem.js?v=materiais-20261112"></script>
+  <script defer src="progresso-sync-core.js?v=20261115"></script>
+  <script defer src="nuvem.js?v=login-20261115"></script>
   <script defer src="portal.js?v=materiais-20261112"></script>
   <script defer src="trilha-dados.js?v=ordem-20261115"></script>
   <script defer src="trilha-progress-core.js?v=20261115"></script>
@@ -132,11 +133,14 @@
       <div class="section-head"><div><h1 id="nuvem-titulo">Seus estudos na nuvem</h1><p>Entre com seu nome de usuário e senha para recuperar seus estudos neste aparelho.</p></div></div>
       <p id="nuvem-status" class="cloud-summary" role="status"></p>
       <div id="nuvem-acesso">
+        <p class="study-note" id="nuvem-acesso-dica">Já tem uma conta? Use o mesmo usuário e senha para continuar seus estudos. Não é necessário criar outro acesso.</p>
         <form id="nuvem-login" class="cloud-form">
+          <h2>Entrar na minha conta</h2>
           <label>Nome de usuário<input name="username" type="text" autocomplete="username" autocapitalize="none" spellcheck="false" minlength="3" maxlength="32" pattern="[a-zA-Z0-9._-]{3,32}" required></label>
           <label>Senha<input name="password" type="password" autocomplete="current-password" minlength="8" maxlength="128" required></label>
           <button class="button primary" type="submit">Entrar</button>
         </form>
+        <button id="nuvem-mostrar-criar" class="button" type="button" hidden>Usar convite de primeiro acesso</button>
         <form id="nuvem-criar" class="cloud-form" hidden>
           <h2>Primeiro acesso</h2>
           <p>Escolha um nome de usuário e uma senha fácil de lembrar, com pelo menos 8 caracteres.</p>
@@ -145,6 +149,7 @@
           <label>Senha<input name="password" type="password" autocomplete="new-password" minlength="8" maxlength="128" required></label>
           <label>Repita a senha<input name="confirm" type="password" autocomplete="new-password" minlength="8" maxlength="128" required></label>
           <button class="button primary" type="submit">Criar meu acesso</button>
+          <button class="button" type="button" id="nuvem-voltar-login">Já tenho conta: entrar</button>
         </form>
         <details id="nuvem-recuperar" class="import">
           <summary>Usar o código de recuperação</summary>
@@ -155,11 +160,12 @@
         </details>
       </div>
       <div id="nuvem-conectado" class="import" hidden>
-        <p>As alterações são enviadas automaticamente. Este navegador mantém seu acesso para as próximas visitas.</p>
+        <p>Conta conectada. As alterações são salvas neste aparelho e sincronizadas com a Cloudflare. Ao voltar pelo mesmo navegador, o acesso permanece ativo enquanto a sessão for válida.</p>
         <button id="nuvem-sincronizar" class="button" type="button">Sincronizar agora</button>
         <button id="nuvem-sair" class="button" type="button">Sair deste aparelho</button>
-        <p>Em outro aparelho, entre com o mesmo nome de usuário e senha.</p>
+        <p>Em outro aparelho, inclusive no ícone adicionado à tela inicial do iPhone, entre com o mesmo nome de usuário e senha para recuperar o progresso.</p>
       </div>
+      <p class="study-note" id="nuvem-orientacao">Confira acima se aparece "Tudo sincronizado com a nuvem" antes de fechar o aplicativo. Se ficar pendente, mantenha a internet ativa e toque em "Sincronizar agora".</p>
       <div id="nuvem-conflitos"></div>
       <details class="import">
         <summary>Recuperar uma anotação anterior</summary>
