@@ -170,7 +170,9 @@
     input.className = "practice-response";
     input.maxLength = MathPractice.MAX_TEXT;
     input.value = progress.drafts[stage.id]?.text ?? "";
-    const label = element("label", "Sua resposta ou cálculo");
+    const label = element("label", MathPractice.supportsMath(stage.id)
+      ? "Explicação por escrito (opcional)"
+      : "Sua resposta");
     label.append(input);
     const mathHost = element("div", "", "math-editor");
     let mathEditor = null;
@@ -300,8 +302,8 @@
     });
     onward.addEventListener("click", () => switchStage(selected + 1));
     questions();
-    practice.append(label);
     if (MathPractice.supportsMath(stage.id)) practice.append(mathHost);
+    practice.append(label);
     if (drawingEditor) practice.append(drawingHost);
     practice.append(reveal, resolution, checkLabel);
     const activity = get("atividade");

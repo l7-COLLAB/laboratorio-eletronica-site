@@ -1,96 +1,111 @@
 "use strict";
 
 (() => {
-  // The MathLive library loads only when a learner opens the editor.
+  // A mathfield uses MathLive's phone-friendly virtual keyboard, not the
+  // operating system's text keyboard. The text explanation remains optional.
   const mathLiveURL = "https://cdn.jsdelivr.net/npm/mathlive@0.111.4/mathlive.min.js";
   let libraryPromise;
+
   function loadMathLive() {
     if (customElements.get("math-field")) return Promise.resolve();
-    if (!libraryPromise) {
-      libraryPromise = new Promise((resolve, reject) => {
-        const script = document.createElement("script");
-        script.src = mathLiveURL;
-        script.async = true;
-        let settled = false;
-        const timer = setTimeout(() => finish(new Error("Library load timeout")), 16000);
-        function finish(error) {
-          if (settled) return;
-          settled = true;
-          clearTimeout(timer);
-          if (error) reject(error);
-          else resolve();
-        }
-        script.onerror = () => finish(new Error("Math editor unavailable"));
-        script.onload = () => customElements.whenDefined("math-field").then(() => finish(), finish);
-        document.head.append(script);
-      }).catch(error => { libraryPromise = null; throw error; });
-    }
+    if (libraryPromise) return libraryPromise;
+    libraryPromise = new Promise((resolve, reject) => {
+      const script = document.createElement("script");
+      script.src = mathLiveURL;
+      script.async = true;
+      const timer = setTimeout(() => fail(new Error("MathLive timeout")), 18000);
+      let finished = false;
+      function finish(error) {
+        if (finished) return;
+        finished = true;
+        clearTimeout(timer);
+        if (error) reject(error);
+        else resolve();
+      }
+      function fail(error) { finish(error); }
+      script.onerror = () => fail(new Error("MathLive could not be loaded"));
+      script.onload = () => customElements.whenDefined("math-field").then(() => finish(), fail);
+      document.head.append(script);
+    }).catch(error => {
+      libraryPromise = null;
+      throw error;
+    });
     return libraryPromise;
   }
-  const keys = [
-    { label: "a⁄b", latex: "\\frac{#?}{#?}", title: "Fração com numerador e denominador" },
-    { label: "x²", latex: "^{2}", title: "Elevar ao quadrado" },
-    { label: "x³", latex: "^{3}", title: "Elevar ao cubo" },
-    { label: "xⁿ", latex: "^{#?}", title: "Expoente personalizado" },
-    { label: "xᵃ⁄ᵇ", latex: "^{\\frac{#?}{#?}}", title: "Expoente fracionário" },
-    { label: "√", latex: "\\sqrt{#?}", title: "Raiz quadrada" },
-    { label: "ⁿ√", latex: "\\sqrt[#?]{#?}", title: "Raiz de índice personalizado" },
-    { label: "(", latex: "(" }, { label: ")", latex: ")" },
-    { label: "=", latex: "=" }, { label: "+", latex: "+" },
-    { label: "−", latex: "-" }, { label: "×", latex: "\\times" },
-    { label: "÷", latex: "\\div" }, { label: "±", latex: "\\pm" },
-    { label: "π", latex: "\\pi" }, { label: "θ", latex: "\\theta" },
-    { label: "Ω", latex: "\\Omega", title: "Ohm" }, { label: "µ", latex: "\\mu" },
-    { label: "∞", latex: "\\infty" },
-    { label: "sin", latex: "\\sin\\left(#?\\right)", title: "Seno" },
-    { label: "cos", latex: "\\cos\\left(#?\\right)", title: "Cosseno" },
-    { label: "tan", latex: "\\tan\\left(#?\\right)", title: "Tangente" },
-    { label: "log", latex: "\\log\\left(#?\\right)", title: "Logaritmo" },
-    { label: "ln", latex: "\\ln\\left(#?\\right)", title: "Logaritmo natural" },
-    ...["0","1","2","3","4","5","6","7","8","9"].map(n => ({label:n, latex:n})),
-    { label: ",", latex: "{,}", title: "Vírgula decimal" },
-    { label: ".", latex: "." }, { label: "x", latex: "x" },
-    { label: "y", latex: "y" }, { label: "t", latex: "t" },
-    { label: "V", latex: "V" }, { label: "I", latex: "I" },
-    { label: "R", latex: "R" },
-    { label: "←", command: "move-to-previous-char", title: "Mover cursor para esquerda" },
-    { label: "→", command: "move-to-next-char", title: "Mover cursor para direita" },
-    { label: "↑", command: "move-up", title: "Subir na expressão" },
-    { label: "↓", command: "move-down", title: "Descer na expressão" },
-    { label: "⌫", command: "delete-backward", title: "Apagar último elemento" },
-    { label: "Limpar", command: "clear-all", title: "Apagar a expressão inteira" }
+
+  function isTouchDevice() {
+    return (typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches) ||
+      (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0);
+  }
+
+  const shortcuts = [
+    {label: "a⁄b", latex: "\\frac{#?}{#?}", hint: "Inserir fração"},
+    {label: "xⁿ", latex: "^{#?}", hint: "Inserir potência"},
+    {label: "xᵃ⁄ᵇ", latex: "^{\\frac{#?}{#?}}", hint: "Inserir expoente fracionário"},
+    {label: "√", latex: "\\sqrt{#?}", hint: "Inserir raiz quadrada"},
+    {label: "ⁿ√", latex: "\\sqrt[#?]{#?}", hint: "Inserir raiz com índice"},
+    {label: "π", latex: "\\pi", hint: "Inserir pi"}
   ];
+
   function createMathEditor(host, { initialLatex = "", onChange = () => {} } = {}) {
-    let latex = initialLatex;
+    let latex = typeof initialLatex === "string" ? initialLatex : "";
     let field = null;
-    let keyboard = null;
-    let loading = false;
+    let requestedFocus = false;
+    let readyPromise = null;
+    let opened = false;
+
     host.dataset.mathEditor = "true";
     host.dataset.latex = latex;
+
     const title = document.createElement("p");
     title.className = "math-editor-label";
-    title.textContent = "Expressão matemática (opcional)";
+    title.textContent = "Sua resposta em matemática";
+
     const help = document.createElement("p");
     help.className = "math-editor-help";
-    help.textContent = "Digite cálculos com frações, potências e raízes. Para explicar seu raciocínio, use o campo de texto acima.";
-    const toggle = document.createElement("button");
-    toggle.type = "button";
-    toggle.className = "button math-editor-open";
-    toggle.textContent = latex ? "Editar expressão matemática" : "Toque para responder com matemática";
-    const status = document.createElement("p");
-    status.className = "math-editor-status";
-    status.setAttribute("role", "status");
+    help.textContent = "Toque no campo de cálculo: o teclado matemático aparece no celular. Use frações, potências, raízes e símbolos; escreva explicações no campo abaixo.";
+
+    const placeholder = document.createElement("button");
+    placeholder.type = "button";
+    placeholder.className = "math-editor-placeholder";
+    placeholder.textContent = "Preparando campo de cálculo…";
+    placeholder.setAttribute("aria-label", "Abrir campo de cálculo matemático");
+
     const content = document.createElement("div");
     content.className = "math-editor-content";
     content.hidden = true;
-    if (latex) status.textContent = "Expressão salva. Abra para visualizar e editar.";
-    host.append(title, help, toggle, content, status);
+
+    const status = document.createElement("p");
+    status.className = "math-editor-status";
+    status.setAttribute("role", "status");
+    status.textContent = "Carregando o teclado matemático…";
+
+    host.append(title, help, placeholder, content, status);
+
+    function mathKeyboard() { return window.mathVirtualKeyboard; }
+
+    function showKeyboard() {
+      if (!field || !isTouchDevice()) return;
+      const keyboard = mathKeyboard();
+      if (!keyboard) return;
+      try {
+        keyboard.layouts = ["numeric", "symbols", "alphabetic", "greek"];
+        keyboard.show();
+      } catch {
+        // MathLive still handles the keyboard automatically on mobile.
+      }
+    }
+
+    function hideKeyboard() {
+      try { mathKeyboard()?.hide(); } catch {}
+    }
+
     function record() {
       if (!field) return;
       const next = field.value || "";
       if (next.length > MathPractice.MAX_LATEX) {
         field.setValue(latex);
-        status.textContent = "Limite de 800 caracteres. Remova elementos antes de continuar.";
+        status.textContent = "A expressão atingiu o limite de 800 caracteres.";
         return;
       }
       latex = next;
@@ -98,96 +113,111 @@
       status.textContent = "Expressão salva nesta atividade.";
       onChange();
     }
-    function buildKeyboard() {
-      keyboard = document.createElement("div");
-      keyboard.className = "math-editor-keys";
-      keyboard.setAttribute("role", "group");
-      keyboard.setAttribute("aria-label", "Teclado matemático");
-      for (const key of keys) {
+
+    function createShortcutButtons() {
+      const toolbar = document.createElement("div");
+      toolbar.className = "math-editor-shortcuts";
+      toolbar.setAttribute("role", "group");
+      toolbar.setAttribute("aria-label", "Atalhos matemáticos");
+      for (const shortcut of shortcuts) {
         const button = document.createElement("button");
         button.type = "button";
-        button.className = "math-editor-key";
-        button.textContent = key.label;
-        button.setAttribute("aria-label", key.title || ("Inserir " + key.label));
+        button.className = "math-editor-shortcut";
+        button.textContent = shortcut.label;
+        button.setAttribute("aria-label", shortcut.hint);
         button.addEventListener("mousedown", event => event.preventDefault());
         button.addEventListener("click", () => {
+          if (!field) return;
           field.focus({ preventScroll: true });
-          if (key.command === "clear-all") {
-            field.executeCommand("select-all");
-            field.executeCommand("delete-backward");
-          } else if (key.command) {
-            field.executeCommand(key.command);
-          } else {
-            field.insert(key.latex, { format: "latex", selectionMode: "placeholder" });
-          }
+          field.insert(shortcut.latex, { format: "latex", selectionMode: "placeholder" });
           record();
+          showKeyboard();
         });
-        keyboard.append(button);
+        toolbar.append(button);
       }
-      const confirm = document.createElement("button");
-      confirm.type = "button";
-      confirm.className = "button primary math-editor-confirm";
-      confirm.textContent = "Confirmar expressão";
-      confirm.addEventListener("click", () => {
-        if (field.value.includes("\\placeholder")) {
-          status.textContent = "Preencha todos os campos da expressão antes de confirmar.";
-          field.focus({ preventScroll: true });
-          return;
-        }
-        record();
-        keyboard.hidden = true;
-        field.readOnly = true;
-        toggle.textContent = "Editar expressão matemática";
-        status.textContent = "Expressão confirmada. Use Editar para alterar.";
-        toggle.focus();
+      return toolbar;
+    }
+
+    function initializeField() {
+      if (opened || !host.isConnected) return;
+      opened = true;
+
+      field = document.createElement("math-field");
+      field.className = "math-editor-field";
+      field.setAttribute("aria-label", "Digite sua expressão matemática");
+      field.setAttribute("math-virtual-keyboard-policy", "auto");
+      field.setAttribute("placeholder", "?");
+      field.addEventListener("input", record);
+      field.addEventListener("focusin", showKeyboard);
+
+      const shortcutsRow = createShortcutButtons();
+      const actions = document.createElement("div");
+      actions.className = "math-editor-actions";
+
+      const toggle = document.createElement("button");
+      toggle.type = "button";
+      toggle.className = "button math-editor-show";
+      toggle.textContent = "Mostrar teclado";
+      toggle.addEventListener("click", () => {
+        field.focus({ preventScroll: true });
+        showKeyboard();
       });
-      keyboard.append(confirm);
+      const done = document.createElement("button");
+      done.type = "button";
+      done.className = "button math-editor-done";
+      done.textContent = "Concluir expressão";
+      done.addEventListener("click", () => {
+        record();
+        hideKeyboard();
+        field.blur();
+        status.textContent = "Expressão registrada. Toque no campo para editar novamente.";
+      });
+      actions.append(toggle, done);
+
+      content.append(field, shortcutsRow, actions);
+      placeholder.replaceWith(content);
+      content.hidden = false;
+      field.value = latex;
+      status.textContent = "Toque no campo para abrir o teclado matemático.";
+      if (requestedFocus) {
+        requestedFocus = false;
+        field.focus({ preventScroll: true });
+        showKeyboard();
+      }
     }
-    async function open() {
-      if (loading) return;
+
+    async function ensureReady() {
+      if (readyPromise) return readyPromise;
+      readyPromise = loadMathLive().then(initializeField).catch(() => {
+        placeholder.disabled = false;
+        placeholder.textContent = "Tentar carregar teclado matemático";
+        status.textContent = "Sem conexão com o editor matemático. Você ainda pode responder no campo de texto.";
+        readyPromise = null;
+      });
+      return readyPromise;
+    }
+
+    function open() {
+      requestedFocus = true;
       if (field) {
-        field.readOnly = false;
-        keyboard.hidden = false;
-        content.hidden = false;
-        toggle.textContent = "Teclado matemático aberto";
+        requestedFocus = false;
         field.focus({ preventScroll: true });
-        return;
-      }
-      loading = true;
-      toggle.disabled = true;
-      status.textContent = "Carregando o editor matemático…";
-      try {
-        await loadMathLive();
-        if (!host.isConnected) return;
-        field = document.createElement("math-field");
-        field.className = "math-editor-field";
-        field.setAttribute("aria-label", "Sua expressão matemática");
-        field.setAttribute("math-virtual-keyboard-policy", "manual");
-        content.append(field);
-        buildKeyboard();
-        content.append(keyboard);
-        field.value = latex;
-        field.addEventListener("input", record);
-        content.hidden = false;
-        toggle.textContent = "Teclado matemático aberto";
-        status.textContent = "Use os botões e as setas para editar numeradores, denominadores e expoentes.";
-        field.focus({ preventScroll: true });
-      } catch (error) {
-        status.textContent = "Editor indisponível. Use o campo de texto acima; sua atividade continua acessível.";
-      } finally {
-        loading = false;
-        toggle.disabled = false;
+        showKeyboard();
+      } else {
+        ensureReady();
       }
     }
-    toggle.addEventListener("click", open);
-    // On touch devices, tapping the mathematical answer area opens the keypad
-    // without requiring the student to find the separate toggle button.
-    host.addEventListener("click", event => {
-      if (event.target === host || event.target === title || event.target === help) {
-        if (content.hidden) open();
-      }
-    });
-    return { open, getValue() { return field ? field.value : latex; } };
+
+    placeholder.addEventListener("click", open);
+    // Start loading as the exercise is rendered, so the first tap on a math
+    // field is a direct touch event (important for iOS Safari).
+    ensureReady();
+
+    return {
+      open,
+      getValue() { return field ? field.value : latex; }
+    };
   }
+
   window.createMathEditor = createMathEditor;
 })();

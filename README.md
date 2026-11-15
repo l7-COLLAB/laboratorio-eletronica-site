@@ -65,3 +65,11 @@ Frontend servido pelo GitHub Pages a partir de `main`, na estrutura existente. O
 - Se o registro da última tentativa mostrar 3/3 e a marcação de conclusão tiver sido perdida, a conclusão é reconstruída a partir das respostas salvas.
 - Marcar um módulo como “revisado” no índice não equivale a passar no quiz (que exige três acertos).
 - Executar `node --test test-trilha-progress.cjs` junto com a suíte de regressão da calculadora, sincronização e Worker.
+
+## Teclado matemático no iPhone (15/11/2026)
+
+O teclado da resposta matemática é um painel virtual do MathLive exibido pelo navegador, semelhante à experiência de exercícios da Khan Academy: sites não conseguem modificar o teclado nativo do iOS. A partir desta atualização, nos módulos com cálculo, o **campo matemático é a resposta principal** e aparece antes da explicação textual (opcional). Toque no campo para abrir automaticamente o teclado matemático na parte inferior da tela; ele usa layouts numérico, símbolos e letras. O botão **Concluir expressão** fecha o teclado sem apagar a resposta, e um novo toque reabre a edição.
+
+Os atalhos abaixo do campo permitem fração, potência, expoente fracionário, raiz quadrada, raiz com índice e π, inclusive no celular. No computador continua disponível o teclado físico. Não há alteração do endpoint, das chaves de sincronização, de autenticação ou do histórico da calculadora; a expressão continua salva no rascunho do exercício.
+
+Se a biblioteca MathLive não puder ser carregada, a resposta por texto permanece utilizável. Os testes de automação conferem os eventos de foco, exibição e fechamento do teclado em simulação; o comportamento no Safari físico do iPhone 11 exige homologação no dispositivo.
