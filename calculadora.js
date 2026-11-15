@@ -6,6 +6,19 @@
   const field = $("calc-expressao"), result = $("calc-resultado"), status = $("calc-status"),
         list = $("calc-historico"), mode = $("calc-angulo");
   if (!field || !window.EletronicaCalc) return;
+  // On touchscreens, the integrated calculator keys are the only input UI.
+  // iOS does not consistently honor inputmode=none for editable inputs;
+  // readonly is required to prevent the system keyboard from covering the keys.
+  const isTouchCalculator = (typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches) ||
+    (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0);
+  field.readOnly = isTouchCalculator;
+  field.inputMode = isTouchCalculator ? "none" : "text";
+  const touchTip = $("calc-touch-tip");
+  if (touchTip) touchTip.hidden = !isTouchCalculator;
+  function focusExpression() {
+    // Focusing an editable input on iOS opens the native keyboard over the calculator.
+    if (!isTouchCalculator) field.focus({preventScroll:true});
+  }
   let last = 0;
   function state() {
     try { return CalcHistory.normalize(JSON.parse(localStorage.getItem(KEY) || '{}')); }
@@ -34,13 +47,14 @@
       const li = document.createElement('li'), button = document.createElement('button'), small = document.createElement('small');
       button.className='calc-reuse'; button.type='button'; button.textContent=row.expr + ' = ' + EletronicaCalc.format(row.result);
       button.title='Reutilizar o cálculo';
-      button.addEventListener('click', () => { field.value=row.expr; result.textContent=EletronicaCalc.format(row.result); mode.value=row.mode || 'deg';field.focus(); });
+      button.addEventListener('click', () => { field.value=row.expr; result.textContent=EletronicaCalc.format(row.result); mode.value=row.mode || 'deg';field.setSelectionRange(field.value.length,field.value.length);focusExpression(); });
       small.textContent = new Date(row.at).toLocaleString('pt-BR') + ' · ' + (row.mode === 'rad' ? 'RAD' : 'DEG');
       li.append(button,small);list.append(li);
     }
   }
   function put(value) {
-    field.setRangeText(value, field.selectionStart ?? field.value.length, field.selectionEnd ?? field.value.length, 'end'); field.focus();
+    field.setRangeText(value, field.selectionStart ?? field.value.length, field.selectionEnd ?? field.value.length, 'end');
+    focusExpression();
   }
   document.querySelectorAll('[data-calc-insert]').forEach(btn => btn.addEventListener('click', () => put(btn.dataset.calcInsert)));
   $('calc-calcular').addEventListener('click', () => {
@@ -55,10 +69,10 @@
       save(current => CalcHistory.merge(current, {clear: current.clear, entries: [{id: crypto.randomUUID(), expr: expanded, result: value, at, mode: unit}]}));
     } catch(error) { result.textContent='Erro';status.textContent=error.message; }
   });
-  $('calc-limpar').addEventListener('click', () => {field.value='';result.textContent='0';status.textContent='';field.focus();});
+  $('calc-limpar').addEventListener('click', () => {field.value='';result.textContent='0';status.textContent='';focusExpression();});
   $('calc-apagar').addEventListener('click', () => {
     const a=field.selectionStart??field.value.length,b=field.selectionEnd??field.value.length;
-    field.setRangeText('',a===b?Math.max(0,a-1):a,b,'end');field.focus();
+    field.setRangeText('',a===b?Math.max(0,a-1):a,b,'end');focusExpression();
   });
   $('calc-apagar-historico').addEventListener('click', () => {
     if (confirm('Apagar o histórico deste aparelho e da nuvem? Após sincronizar, as contas anteriores também serão removidas nos outros aparelhos.')) { save(() => ({clear: new Date().toISOString(), entries: []})); result.textContent='0'; }
