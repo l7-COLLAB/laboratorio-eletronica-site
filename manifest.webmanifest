@@ -1,0 +1,11 @@
+{
+  "name": "Laboratório de Eletrônica",
+  "short_name": "Laboratório",
+  "lang": "pt-BR",
+  "start_url": "./#inicio",
+  "scope": "./",
+  "display": "standalone",
+  "background_color": "#0d1519",
+  "theme_color": "#142126",
+  "icons": [{"src":"icone.svg","sizes":"any","type":"image/svg+xml","purpose":"any"}]
+}

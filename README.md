@@ -85,3 +85,28 @@ Se a biblioteca MathLive não puder ser carregada, a resposta por texto permanec
 - Para conferir: conectar o iPhone na tela Nuvem, esperar a confirmação, fechar e reabrir, verificar os módulos concluídos; se instalado na tela inicial, fazer login nessa instalação separadamente uma vez.
 - Segurança: não limpar os dados locais antes de confirmar sincronização, nem compartilhar a senha. Em caso de conflito, ler ambas as versões antes de escolher.
 - Testes automatizados: \`node --test test-progresso-sync.cjs test-login-retorno.cjs test-sync.cjs test-worker.mjs\`.
+
+## Espaço de estudos (15/11/2026)
+
+A navegação preserva as seções anteriores e acrescenta início, biblioteca e progresso por habilidade. A paleta carvão/verde continua a mesma. As 24 etapas continuam separadas dos 60 componentes planejados; nenhuma disciplina é marcada como concluída pelo nivelamento.
+
+`aprendizagem-core.js` calcula os indicadores a partir dos registros reais. Quiz perfeito significa proficiência; revisão vencida ou último quiz incompleto recomenda reforço. “Dominado” é reservado a avaliações independentes futuras, porque as revisões existentes são autodeclaradas.
+
+A mesma chave de trilha ganha campos opcionais `resume`, `quizDraft`, `history` e `practiceAnswers`. Os campos antigos e desconhecidos são preservados. `resume` guarda ID e seção; `quizDraft` conserva alternativas ainda não enviadas; `history` guarda até 60 tentativas novas por UUID, data e índices dos erros. O histórico antigo da última tentativa continua em `attempts`. O merge combina históricos e exige escolha para respostas incompatíveis. O backend existente aceita esses campos opcionais, sem alteração de tabelas ou credenciais.
+
+`pratica-numerica.js` confere subpartes objetivas de 11 atividades com o parser seguro já existente, unidade indicada e tolerância absoluta explícita. Não avalia justificativas discursivas, fatoração simbólica irrestrita nem desenhos livres. M06 mantém seu componente geométrico. As práticas abertas continuam autoavaliadas e a aprovação continua dependendo de 3/3 no quiz.
+
+O manifesto e Service Worker permitem reabrir o conteúdo já armazenado offline após uma primeira visita online. O cache usa rede primeiro e nunca intercepta o Worker, login ou APIs externas. PDFs são armazenados ao abrir; MathLive e vídeos externos precisam de conexão, com a alternativa textual existente. A atualização do Service Worker aguarda o fechamento de abas anteriores. Não limpar dados locais para atualizar.
+
+### Migração e reversão
+
+Partida: `9cc2cfca6d42d1297fc55419532deaaf5363b4da`. Não há migração D1, alteração do Worker ou escrita nos dados reais do aluno durante QA. Testes usam dados locais de preview e SQLite em memória. Antes de migrações futuras no servidor, exportar D1 e testar restauração; nenhuma migração de servidor foi necessária nesta entrega. Reverter a interface por commit, preservando dados; versões antigas podem ignorar campos novos, por isso não usá-las para editar progresso depois do rollback sem copiar os registros primeiro.
+
+### Limitações verificáveis
+
+- A grade de 60 disciplinas é um plano, ainda não 60 cursos completos.
+- Conteúdo existente foi reaproveitado; explicações por distrator, banco maior de exercícios, avaliação simbólica geral e construtor de circuitos continuam pendentes.
+- Push não está ativo: o Worker consultado não possui Cron Triggers e só tem DB/TOKEN_HASH; faltam assinatura, VAPID, envio e homologação física. Preferências: 20h30 America/Sao_Paulo, seg-sex, dois dias sem estudo e próximo módulo.
+- Safari/iPhone 11 físico, push e recuperação autenticada dos dados reais do aluno precisam de homologação; não foram simulados como testes físicos.
+
+Testes: `node --test test-*.cjs test-worker.mjs` (Node 24). A automação cobre login, sincronização, parser, teclado, preservação legada, indicadores e conferência numérica. QA de navegador no preview cobriu entrada, prática, respostas de quiz, recarga com seleção preservada, 3/3 e abertura da próxima etapa.

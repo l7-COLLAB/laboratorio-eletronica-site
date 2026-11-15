@@ -5,6 +5,8 @@
   <meta name="robots" content="noindex">
   <meta name="viewport" content="width=device-width, initial-scale=1">
   <meta name="description" content="Apostila, grade e projetos práticos de Engenharia Eletrônica e Microeletrônica.">
+  <link rel="manifest" href="manifest.webmanifest">
+  <meta name="theme-color" content="#142126">
   <title>Laboratório de Eletrônica</title>
   <link rel="stylesheet" href="estilos.css?v=materiais-20261112">
   <script defer src="catalogo.js"></script>
@@ -16,6 +18,7 @@
   <script defer src="historico-core.js?v=20261112"></script>
   <script defer src="recursos.js?v=20261112"></script>
   <script defer src="calculadora-core.js?v=20261112"></script>
+  <script defer src="aprendizagem-core.js?v=20261115"></script>
   <script defer src="progresso-sync-core.js?v=20261115"></script>
   <script defer src="nuvem.js?v=login-20261115"></script>
   <script defer src="portal.js?v=materiais-20261112"></script>
@@ -25,19 +28,26 @@
   <script defer src="teclado-matematico.js?v=iphone-20261115"></script>
   <script defer src="desenho.js?v=20261115"></script>
   <script defer src="geometria.js?v=20261115"></script>
-  <script defer src="trilha.js?v=iphone-20261115"></script>
+  <script defer src="pratica-numerica.js?v=20261115"></script>
+  <script defer src="trilha.js?v=plataforma-20261115"></script>
+  <script defer src="plataforma.js?v=20261115"></script>
+  <link rel="stylesheet" href="plataforma.css?v=20261115">
   <script defer src="calculadora.js?v=20261112"></script>
 </head>
 <body>
   <a class="skip" href="#conteudo">Ir ao conteúdo</a>
   <header class="top">
     <div class="wrap top-inner">
-      <a class="brand" href="#trilha"><span aria-hidden="true">∿</span> Laboratório de Eletrônica</a>
-      <nav class="menu" aria-label="Menu principal">
-        <a class="button" href="#trilha">Estudar</a>
-        <a class="button" href="#etapas">Etapas</a>
+      <a class="brand" href="#inicio"><span aria-hidden="true">∿</span> Laboratório de Eletrônica</a>
+      <button class="button menu-toggle" type="button" aria-expanded="false" aria-controls="menu-principal">Menu</button>
+      <nav id="menu-principal" class="menu" aria-label="Menu principal">
+        <a class="button" href="#inicio">Meu espaço</a>
+        <a class="button" href="#trilha">Minha aula</a>
+        <a class="button" href="#etapas">Meu curso</a>
         <a class="button" href="#revisao">Revisão</a>
         <a class="button" href="#projetos">Projetos</a>
+        <a class="button" href="#biblioteca">Biblioteca</a>
+        <a class="button" href="#habilidades">Meu progresso</a>
         <a class="button" href="#grade">Grade</a>
         <a class="button" href="#anotacoes">Anotações</a>
         <a class="button" href="#calculadora">Calculadora</a>
@@ -47,6 +57,17 @@
     <div class="wrap"><a id="nuvem-indicador" class="cloud-indicator" href="#nuvem">Entrar para salvar na nuvem</a></div>
   </header>
   <main class="wrap" id="conteudo" tabindex="-1">
+    <section id="inicio" data-view aria-labelledby="inicio-titulo">
+      <p class="home-welcome" id="home-saudacao"></p><h1 id="inicio-titulo">Meu espaço de estudos</h1>
+      <p class="home-intro">Bons estudos. Um passo de cada vez, dos fundamentos à microeletrônica.</p>
+      <div class="continue-panel"><p class="eyebrow">SEU PRÓXIMO PASSO</p><h2 id="home-aula"></h2>
+      <p id="home-objetivo"></p><p id="home-percentual"></p><progress id="home-barra" max="24" value="0" aria-label="Etapas concluídas"></progress>
+      <button id="home-continuar" class="button primary" type="button">Continuar estudando</button></div>
+      <div class="home-summary"><section><h2>Seu ritmo</h2><p id="home-meta"></p><a href="#trilha" class="button">Ajustar meta diária</a><p id="home-revisoes"></p><a href="#revisao">Abrir revisões</a></section>
+      <section><h2>Reforço recomendado</h2><ul id="home-reforco"></ul><a href="#habilidades">Ver minhas habilidades</a></section></div>
+    </section>
+    <section id="biblioteca" data-view aria-labelledby="biblioteca-titulo" hidden><h1 id="biblioteca-titulo">Biblioteca e ferramentas</h1><p>Materiais do nivelamento, organizados por unidade.</p><div id="biblioteca-lista"></div><div class="actions"><a class="button" href="#anotacoes">Anotações</a><a class="button" href="#calculadora">Calculadora científica</a><a class="button" href="#projetos">Projetos práticos</a></div></section>
+    <section id="habilidades" data-view aria-labelledby="habilidades-titulo" hidden><h1 id="habilidades-titulo">Meu progresso</h1><p>Conclusão e domínio são medidas diferentes. Os indicadores abaixo usam seus quizzes e revisões.</p><details class="import"><summary>Como os estados são calculados</summary><p>Não iniciado: sem resposta registrada. Em aprendizagem: rascunho ou tentativa. Precisa revisar: último quiz incompleto ou revisão vencida. Proficiente: quiz perfeito registrado. Dominado fica reservado a avaliações independentes futuras; revisões autodeclaradas não comprovam domínio.</p></details><div id="habilidades-lista"></div><h2>Histórico de tentativas</h2><p>Até 60 tentativas a partir desta versão. Os resultados anteriores permanecem preservados.</p><ol id="tentativas-lista" class="history-list"></ol></section>
     <section id="trilha" data-view aria-labelledby="trilha-titulo">
       <div style="margin-bottom: 1.25rem">
         <p id="boas-vindas" style="color: var(--accent); font-size: 1.4rem; font-weight: 700">Olá, meu amorzinho!</p>
@@ -86,7 +107,7 @@
       <div class="section-head">
         <div><h1 id="etapas-titulo">Etapas</h1><p>Toque em uma etapa disponível para estudar ou rever o gabarito.</p></div>
       </div>
-      <div id="mapa-trilha"></div>
+      <div class="view-controls"><button class="button" id="ver-percurso" type="button" aria-pressed="true">Percurso</button><button class="button" id="ver-lista" type="button" aria-pressed="false">Lista</button></div><div id="mapa-trilha" class="path-mode"></div>
       <details id="nivelamento" class="import">
         <summary>Buscar no índice de nivelamento</summary>
         <div class="progress"><strong id="progresso" aria-live="polite">0 de 14 revisados</strong><progress aria-label="Módulos revisados neste navegador" id="barra" max="14" value="0"></progress><small>Marcações salvas neste navegador.</small></div>

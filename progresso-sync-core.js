@@ -76,8 +76,18 @@
     const lastGoal = [local.lastGoal, remote.lastGoal].filter(x => Number.isInteger(x) && x >= 0);
     const minutes = [10, 15, 20].includes(local.minutes) ? local.minutes :
       [10, 15, 20].includes(remote.minutes) ? remote.minutes : 15;
+    const practiceAnswers = {...objectMap(remote.practiceAnswers)};
+    for(const [id,values] of Object.entries(objectMap(local.practiceAnswers))){
+      if(!validId(id))continue;
+      if(Object.hasOwn(practiceAnswers,id) && JSON.stringify(practiceAnswers[id])!==JSON.stringify(values))return null;
+      practiceAnswers[id]=values;
+    }
+    const resume = [local.resume,remote.resume].filter(r=>plain(r) && validId(r.id) && ["teoria","pratica","quiz","resultado"].includes(r.phase) && Number.isFinite(r.at)).sort((a,b)=>b.at-a.at)[0] ?? null;
+    const history = typeof root.Learning !== "undefined" ? root.Learning.history([...(Array.isArray(remote.history)?remote.history:[]),...(Array.isArray(local.history)?local.history:[])]) : undefined;
+    if (local.quizDraft && remote.quizDraft && JSON.stringify(local.quizDraft.answers)!==JSON.stringify(remote.quizDraft.answers)) return null;
     return {
       ...remote, ...local,
+      ...(history ? {history} : {}),practiceAnswers,resume,quizDraft:local.quizDraft ?? remote.quizDraft,
       passed, attempts, reviews, drafts,
       minutes, lastGoal: lastGoal.length ? Math.max(...lastGoal) : null
     };
