@@ -95,3 +95,17 @@ test("sincronização de progresso é acionada em pull e em conflito de PUT",()=
  assert.match(js,/verified = true/);
  assert.match(js,/Salvo neste aparelho\. Aguardando confirmação da nuvem/);
 });
+
+
+test("diagrama interativo não se perde ao juntar progresso de dois navegadores",()=>{
+ const local=state(["M06"],{drafts:{M06:{diagram:"{\"points\":[[0,0],[3,4]]}",text:"",latex:"",drawing:""}}});
+ const remote=state(["M03"],{drafts:{M03:{diagram:"",text:"Exercício",latex:"",drawing:""}}});
+ const result=core.merge(local,remote,stages);
+ assert.equal(result.drafts.M06.diagram,local.drafts.M06.diagram);
+ assert.equal(result.drafts.M03.text,"Exercício");
+});
+test("dois diagramas diferentes para a mesma etapa exigem decisão humana",()=>{
+ const local=state([], {drafts:{M06:{diagram:"{\"points\":[[0,0],[3,4]]}"}}});
+ const remote=state([], {drafts:{M06:{diagram:"{\"points\":[[0,0],[5,12]]}"}}});
+ assert.equal(core.merge(local,remote,stages),null);
+});
