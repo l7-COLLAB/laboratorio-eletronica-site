@@ -44,11 +44,13 @@ function createTriangleExercise(host, {initial = "", onChange = () => {}} = {}) 
     const expected = {vertical:"5",horizontal:"12",diagonal:"13",angle:"C",sin:"5/13",cos:"12/13"};
     const missing = Object.keys(expected).filter(k=>!controls[k].value);
     const errors = Object.keys(expected).filter(k=>controls[k].value && controls[k].value!==expected[k]);
-    return {correct:!missing.length&&!errors.length,missing,errors};
+    return {complete:missing.length===0,correct:!missing.length&&!errors.length,graded:true,missing,errors};
   };
   const refreshFigure = () => {
     svg.querySelectorAll(".geometry-value").forEach(node=>node.remove());
-    const locations={vertical:[30,125],horizontal:[166,216],diagonal:[185,99],angle:[280,181]};
+    const anglePosition={A:[82,59],B:[78,166],C:[280,181]};
+    const locations={vertical:[30,125],horizontal:[166,216],diagonal:[185,99],
+      angle:anglePosition[controls.angle.value] || [280,181]};
     for(const key of ["vertical","horizontal","diagonal","angle"]){
       if(!controls[key].value) continue;
       const el=document.createElementNS(svg.namespaceURI,"text");

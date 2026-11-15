@@ -46,6 +46,14 @@ A suíte cobre matemática, rejeição de código, domínios inválidos, união,
 Frontend servido pelo GitHub Pages a partir de `main`, na estrutura existente. O backend permanece em https://laboratorio-eletronica-sync.l7526080.workers.dev. Ao atualizar o Worker, preserve a ligação D1 `DB`, todos os secrets e a data de compatibilidade; envie também `historico-core.js`. Nunca publique credenciais no repositório.
 
 
+## Ferramentas de resposta estruturada (15/11/2026)
+
+A auditoria das 24 práticas identificou uma única solicitação explícita de desenho livre (M06), já equipada com o triângulo 5–12–13 e seleção de lados, ângulo e seno/cosseno. O M06 agora marca o ângulo na posição escolhida e permite comparar a resolução depois de completar a tentativa, mesmo que a escolha esteja incorreta.
+
+Os demais enunciados que pedem uma representação visual ou várias escolhas passaram a ter instrumentos específicos: M05 (tabela da função), M09 (esquema em série), M10 (NAND), M11 (tabela de testes), M12 (roteiro de experimento), S01 (pares I-V e gráfico), S02 (esquema do nó), S04 (comparação de amostragem), S06 (tabela de estados CMOS), S07 (seleção por restrições), S08 (DRC/LVS/STA), S09 (planejamento de carga) e S10 (resultado e limitações). Os campos de resposta de múltipla escolha possuem valores e critérios objetivos com botão **Corrigir atividade**. As propostas e justificativas são registradas e comparadas com o exemplo resolvido, **sem avaliação semântica automática**. O aluno ainda precisa obter 3/3 no quiz para concluir o módulo.
+
+Os widgets novos usam `drafts[id].diagram` e a sanitização já existente; não alteram login, D1, Worker, endpoint, conta nem campos de progresso. Respostas numéricas anteriores permanecem guardadas; o editor de M05/M09 preenche valores compatíveis a partir dos dados legados quando não há rascunho novo. O layout é responsivo, sem arraste obrigatória para funcionar no iPhone, e o service worker versiona os novos recursos. Executar `node --test test-pratica-estruturada.cjs` junto à suíte geral. Testes reais no iPhone 11 ainda são necessários para confirmar ergonomia, gráficos e sincronização.
+
 ## Teclado matemático nos exercícios
 
 - Os exercícios de conteúdo matemático possuem um botão "Abrir teclado matemático", que carrega MathLive 0.111.4 sob demanda.

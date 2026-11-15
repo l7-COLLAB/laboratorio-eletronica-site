@@ -173,7 +173,11 @@
     theory.append(example);
     const practice = block("Pratique sem consulta", stage.task);
     const numericHost = element("div");
-    const numericEditor = NumericPractice.create(numericHost,stage.id,progress.practiceAnswers?.[stage.id],answers=>{
+    const usesStructured = Boolean(window.StructuredPracticeCore?.has(stage.id));
+    const needsStandaloneMath = MathPractice.supportsMath(stage.id) && !usesStructured && stage.id !== "M06";
+    // Avoid duplicate questions: the new table/diagram replaces the older numeric widgets.
+    // Existing numeric answers remain in progress.practiceAnswers for recovery.
+    const numericEditor = usesStructured ? null : NumericPractice.create(numericHost,stage.id,progress.practiceAnswers?.[stage.id],answers=>{
       progress.practiceAnswers={...(progress.practiceAnswers??{}),[stage.id]:answers};
       updatePractice();
     });
@@ -183,16 +187,22 @@
     input.className = "practice-response";
     input.maxLength = MathPractice.MAX_TEXT;
     input.value = progress.drafts[stage.id]?.text ?? "";
-    const label = element("label", MathPractice.supportsMath(stage.id)
-      ? "Explicação por escrito (opcional)"
-      : "Sua resposta");
+    const needsExplanation = ["M05","S01","S06","S07"].includes(stage.id);
+    const label = element("label", needsExplanation
+      ? "Explique ou justifique seu raciocínio (obrigatório)"
+      : MathPractice.supportsMath(stage.id) ? "Explicação por escrito (opcional)" : "Sua resposta");
     label.append(input);
     const mathHost = element("div", "", "math-editor");
     let mathEditor = null;
     const savedLatex = progress.drafts[stage.id]?.latex ?? "";
     let drawingEditor = null;
     let diagramEditor = null;
-    const hasPracticeAnswer = () => (numericEditor?.getValue().every(value=>value.trim()) || (diagramEditor ? diagramEditor.validate().correct : MathPractice.hasAnswer(input.value, mathEditor?.getValue() ?? savedLatex, drawingEditor?.getValue() ?? progress.drafts[stage.id]?.drawing)));
+    const hasPracticeAnswer = () => {
+      if (diagramEditor) return diagramEditor.validate().complete && (!needsExplanation || Boolean(input.value.trim()));
+      if (numericEditor) return numericEditor.getValue().every(value=>value.trim());
+      return MathPractice.hasAnswer(input.value, mathEditor?.getValue() ?? savedLatex,
+        drawingEditor?.getValue() ?? progress.drafts[stage.id]?.drawing);
+    };
     function updatePractice() {
       const latex = mathEditor?.getValue() ?? savedLatex;
       progress.drafts = MathPractice.saveDraft(progress.drafts, stage.id, input.value, latex, drawingEditor?.getValue() ?? progress.drafts[stage.id]?.drawing ?? "", diagramEditor?.getValue() ?? progress.drafts[stage.id]?.diagram ?? "");
@@ -205,11 +215,26 @@
         quiz.hidden = true;
       }
     }
-    if (MathPractice.supportsMath(stage.id)) {
+    if (needsStandaloneMath) {
       mathEditor = createMathEditor(mathHost, { initialLatex: savedLatex, onChange: updatePractice });
     }
     const diagramHost = element("div", "", "diagram-host");
-    if (stage.id === "M06" && typeof createTriangleExercise === "function") diagramEditor = createTriangleExercise(diagramHost, {initial: progress.drafts[stage.id]?.diagram ?? "", onChange: updatePractice});
+    if (stage.id === "M06" && typeof createTriangleExercise === "function") {
+      diagramEditor = createTriangleExercise(diagramHost, {initial: progress.drafts[stage.id]?.diagram ?? "", onChange: updatePractice});
+    } else if (usesStructured && window.StructuredPractice) {
+      const saved = progress.drafts[stage.id]?.diagram ?? "";
+      // M05/M09 used numeric answers previously. Prefill compatible fields without
+      // overwriting prior answers or changing the cloud schema.
+      const oldNumbers = progress.practiceAnswers?.[stage.id];
+      let initial = saved;
+      if (!initial && Array.isArray(oldNumbers)) {
+        if (stage.id === "M05" && oldNumbers.length >= 3)
+          initial = JSON.stringify({y0:oldNumbers[0],y1:oldNumbers[1],y2:oldNumbers[2]});
+        if (stage.id === "M09" && oldNumbers[0])
+          initial = JSON.stringify({i:oldNumbers[0] + " mA"});
+      }
+      diagramEditor = StructuredPractice.create(diagramHost,stage.id,{initial,onChange:updatePractice});
+    }
     const drawingHost = element("div", "", "drawing-host");
     if (!diagramEditor && typeof createDrawingEditor === "function" && /desenh|esbo[cç]|trace (?:um |o )?gr[aá]fico|fa[cç]a (?:um |o )?diagrama/i.test(stage.task)) {
       drawingEditor = createDrawingEditor(drawingHost, { initial: progress.drafts[stage.id]?.drawing ?? "", onChange: updatePractice });
@@ -341,7 +366,7 @@
       if(progress.resume.phase === "resultado" && alreadyPassed) onward.hidden=selected+1>=etapas.length;
       if(progress.resume.phase === "resultado" && !alreadyPassed) quiz.hidden=false;
     }
-    if (MathPractice.supportsMath(stage.id)) practice.append(mathHost);
+    if (needsStandaloneMath) practice.append(mathHost);
     practice.append(label);
     if (diagramEditor) practice.append(diagramHost);
     if (drawingEditor) practice.append(drawingHost);
@@ -355,7 +380,10 @@
       });navigation.append(button);
     }
     const prerequisite=element("p",selected?"Pré-requisito curricular: "+etapas[selected-1].id+". Conclusões legadas mantêm o acesso já conquistado.":"Pré-requisito: nenhum. Comece pelo método de estudo.","lesson-prerequisite");
-    if (!diagramEditor) practice.append(element("p","Esta resposta é uma prática de autoavaliação. A correção automática da etapa acontece no quiz.","study-note"));
+    if (!diagramEditor && !numericEditor)
+      practice.append(element("p","Esta prática discursiva é de autoavaliação. A correção automática da etapa acontece no quiz.","study-note"));
+    if (diagramEditor)
+      practice.append(element("p","Use Corrigir atividade para conferir os campos objetivos. Justificativas e propostas precisam ser comparadas com a resolução.","study-note"));
     activity.replaceChildren(status, title, element("p", stage.goal), prerequisite,navigation,theory,
       block("Curiosidade aplicada", stage.curiosity), practice, quiz, announcement, result, onward,
       noteEditor(stageCategory(stage.id)));
@@ -433,7 +461,10 @@
     const practiceInput = get("atividade").querySelector("textarea.practice-response");
     const mathHost = get("atividade").querySelector("[data-math-editor]");
     const drawingHost = get("atividade").querySelector("[data-drawing-editor]");
-    const hasDraft = MathPractice.hasAnswer(practiceInput?.value, mathHost?.dataset.latex, drawingHost?.dataset.drawing) || Boolean(get("atividade").querySelector("[data-triangle-exercise]"));
+    const structuredHost = get("atividade").querySelector("[data-structured-practice]");
+    const hasDraft = MathPractice.hasAnswer(practiceInput?.value, mathHost?.dataset.latex, drawingHost?.dataset.drawing) ||
+      Boolean(get("atividade").querySelector("[data-triangle-exercise]")) ||
+      structuredHost?.dataset.hasDraft === "true";
     const selectionWasLocked = !canOpen(selected);
     if (selectionWasLocked) selected = Math.min(firstOpen(), etapas.length - 1);
     if (!hasDraft || selectionWasLocked) {
