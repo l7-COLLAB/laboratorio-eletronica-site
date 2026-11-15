@@ -11,7 +11,7 @@
   <link rel="stylesheet" href="estilos.css?v=materiais-20261112">
   <script defer src="catalogo.js"></script>
   <script defer src="anotacoes.js?v=materiais-20261112"></script>
-  <link rel="stylesheet" href="calculadora.css?v=iphone-20261115">
+  <link rel="stylesheet" href="calculadora.css?v=visor-20261115">
   <link rel="stylesheet" href="teclado-matematico.css?v=iphone-foco-20261115">
   <link rel="stylesheet" href="desenho.css?v=20261115">
   <link rel="stylesheet" href="geometria.css?v=20261115">
@@ -32,7 +32,7 @@
   <script defer src="trilha.js?v=plataforma-20261115"></script>
   <script defer src="plataforma.js?v=20261115"></script>
   <link rel="stylesheet" href="plataforma.css?v=20261115">
-  <script defer src="calculadora.js?v=iphone-20261115"></script>
+  <script defer src="calculadora.js?v=visor-20261115"></script>
 </head>
 <body>
   <a class="skip" href="#conteudo">Ir ao conteúdo</a>
@@ -201,10 +201,11 @@
       <p>Operações, funções trigonométricas e histórico das últimas 80 contas.</p></div></div>
       <div class="calc-layout">
         <div class="calc-panel">
-          <label class="calc-label" for="calc-expressao">Expressão</label>
-          <input id="calc-expressao" class="calc-input" type="text" autocomplete="off" spellcheck="false"
-                 inputmode="none" readonly maxlength="180" placeholder="Ex.: sin(30) + sqrt(9)" aria-describedby="calc-ajuda calc-touch-tip">
-          <p id="calc-touch-tip" class="calc-touch-tip" hidden>Use os botões abaixo para digitar. O teclado do celular ficará fechado.</p>
+          <p class="calc-label" id="calc-expression-label">Expressão</p>
+          <!-- Non-editable display: iOS cannot summon its native keyboard here, regardless of touch detection. -->
+          <div id="calc-expressao" class="calc-input" role="textbox" aria-readonly="true" tabindex="0"
+               aria-labelledby="calc-expression-label" aria-describedby="calc-ajuda calc-touch-tip" data-empty="true"></div>
+          <p id="calc-touch-tip" class="calc-touch-tip">Digite usando os botões da calculadora. No computador, o teclado físico também funciona.</p>
           <div class="calc-settings"><label for="calc-angulo">Ângulos
             <select id="calc-angulo"><option value="deg">Graus (DEG)</option><option value="rad">Radianos (RAD)</option></select></label>
             <p id="calc-ajuda">Use * para multiplicar, ^ para potência, ! para fatorial e % para dividir por 100. Ex.: 200*10% = 20; 27^(1/3) = 3. Enter calcula, Esc limpa. sin/cos/tan e inversas respeitam DEG/RAD. Resultados aproximados em ponto flutuante.</p>
@@ -246,6 +247,8 @@
         <button type="button" class="calc-key" data-calc-insert="^(1/" aria-label="Raiz de índice n: complete o índice e feche parênteses">ⁿ√</button>
           </div>
           <div class="calc-actions">
+            <button id="calc-cursor-left" class="button calc-cursor" type="button" aria-label="Mover cursor para a esquerda">←</button>
+            <button id="calc-cursor-right" class="button calc-cursor" type="button" aria-label="Mover cursor para a direita">→</button>
             <button id="calc-apagar" class="button" type="button">Apagar caractere</button>
             <button id="calc-limpar" class="button" type="button">Limpar</button>
             <button id="calc-calcular" class="button primary" type="button">Calcular =</button>

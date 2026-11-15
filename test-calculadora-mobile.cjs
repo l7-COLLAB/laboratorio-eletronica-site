@@ -3,79 +3,90 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const vm = require("node:vm");
+const script = fs.readFileSync(require.resolve("./calculadora.js"), "utf8");
+const html = fs.readFileSync(require.resolve("./index.html"), "utf8");
 
-const calculatorScript = fs.readFileSync(require.resolve("./calculadora.js"), "utf8");
-const page = fs.readFileSync(require.resolve("./index.html"), "utf8");
-
-class Element {
-  constructor() {
-    this.value = ""; this.textContent = ""; this.dataset = {};
-    this.readOnly = false; this.inputMode = "text"; this.hidden = false;
-    this.selectionStart = 0; this.selectionEnd = 0; this.focusCount = 0;
-    this.listeners = {}; this.children = [];
+class Fake {
+  constructor(tagName = "DIV") {
+    this.tagName = tagName; this.value = ""; this.textContent = ""; this.dataset = {};
+    this.children = []; this.attributes = {}; this.hidden = false; this.listeners = {};
+    this.focusCount = 0; this.className = "";
   }
-  addEventListener(event, handler) { this.listeners[event] = handler; }
+  addEventListener(type, fn) { this.listeners[type] = fn; }
   click() { this.listeners.click?.(); }
   focus() { this.focusCount++; }
-  replaceChildren(...elements) { this.children = elements; }
-  append(...elements) { this.children.push(...elements); }
-  setSelectionRange(start, end) { this.selectionStart = start; this.selectionEnd = end; }
-  setRangeText(inserted, start, end) {
-    this.value = this.value.slice(0, start) + inserted + this.value.slice(end);
-    this.setSelectionRange(start + inserted.length, start + inserted.length);
-  }
+  setAttribute(name, val) { this.attributes[name] = val; }
+  replaceChildren(...items) { this.children = items; }
+  append(...items) { this.children.push(...items); }
 }
 function launch(touch) {
-  const ids = ["calc-expressao", "calc-resultado", "calc-status", "calc-historico", "calc-total",
-    "calc-angulo", "calc-calcular", "calc-limpar", "calc-apagar", "calc-apagar-historico", "calc-touch-tip"];
-  const elems = Object.fromEntries(ids.map(id => [id, new Element()]));
-  elems["calc-angulo"].value = "deg";
-  const inserts = ["3", "+", "7"].map(value => {
-    const element = new Element();
-    element.dataset.calcInsert = value; return element;
+  const ids = ["calc-expressao", "calc-resultado", "calc-status", "calc-historico",
+    "calc-total", "calc-angulo", "calc-calcular", "calc-limpar", "calc-apagar",
+    "calc-apagar-historico", "calc-cursor-left", "calc-cursor-right", "calculadora"];
+  const el = Object.fromEntries(ids.map(id => [id, new Fake()]));
+  el["calc-angulo"].value = "deg";
+  const btns = ["3", "+", "7", "sin("].map(v => {
+    const b = new Fake("BUTTON"); b.dataset.calcInsert = v; return b;
   });
+  const docHandlers = {};
   const document = {
-    getElementById: id => elems[id],
-    querySelectorAll: selector => selector === "[data-calc-insert]" ? inserts : [],
-    createElement: () => new Element()
+    getElementById: id => el[id],
+    querySelectorAll: selector => selector === "[data-calc-insert]" ? btns : [],
+    createElement: tag => new Fake(tag.toUpperCase()),
+    createTextNode: text => ({textContent: text}),
+    addEventListener: (name, fn) => { docHandlers[name] = fn; }
   };
-  const calc = {evaluate: () => 10, format: value => String(value)};
-  const window = {EletronicaCalc: calc, addEventListener() {}};
-  vm.runInNewContext(calculatorScript, {
-    document, window, navigator: {maxTouchPoints: touch ? 5 : 0},
+  const fakeHistory = { KEY: "test-calc", MAX: 80, normalize: () => ({entries: []}) };
+  const calc = { evaluate: () => 10, format: n => String(n) };
+  const win = { EletronicaCalc: calc, addEventListener() {} };
+  vm.runInNewContext(script, {
+    document, window: win, navigator: {maxTouchPoints: touch ? 5 : 0},
     matchMedia: () => ({matches: touch}), EletronicaCalc: calc,
-    CalcHistory: {KEY: "test-calc", MAX: 80, normalize: () => ({entries: []})},
-    localStorage: {getItem: () => null}, console
+    CalcHistory: fakeHistory, localStorage: {getItem: () => null}, console
   });
-  return {elems, inserts, expression: elems["calc-expressao"]};
+  const expression = () => el["calc-expressao"].children
+    .filter(child => typeof child.textContent === "string").map(child => child.textContent).join("");
+  return {el, btns, docHandlers, expression};
 }
-
-test("HTML starts readonly so iOS cannot open the native keyboard before JavaScript initializes", () => {
-  assert.match(page, /id="calc-expressao"[^>]*inputmode="none" readonly/);
+test("calculator markup has no editable input or contenteditable display", () => {
+  const markup = html.match(/<div id="calc-expressao"[\s\S]*?<\/div>/)?.[0];
+  assert.ok(markup);
+  assert.doesNotMatch(markup, /<input|contenteditable|<textarea/i);
+  assert.match(markup, /aria-readonly="true"/);
+  assert.match(markup, /tabindex="0"/);
 });
-
-test("iPhone uses only calculator keys and never focuses its native text keyboard", () => {
-  const {elems, inserts, expression} = launch(true);
-  assert.equal(expression.readOnly, true);
-  assert.equal(expression.inputMode, "none");
-  assert.equal(elems["calc-touch-tip"].hidden, false);
-  inserts[0].click(); inserts[1].click(); inserts[2].click();
-  assert.equal(expression.value, "3+7");
-  assert.equal(expression.focusCount, 0);
-  elems["calc-apagar"].click();
-  assert.equal(expression.value, "3+");
-  elems["calc-limpar"].click();
-  assert.equal(expression.value, "");
-  assert.equal(expression.focusCount, 0);
+test("calculator buttons work even when the iPhone has no detectable touch support", () => {
+  for (const touch of [true, false]) {
+    const {el, btns, expression} = launch(touch);
+    btns[0].click(); btns[1].click(); btns[2].click();
+    assert.equal(expression(), "3+7");
+    assert.equal(el["calc-expressao"].focusCount, 0);
+    el["calc-cursor-left"].click();
+    btns[3].click();
+    assert.equal(expression(), "3+sin(7");
+    el["calc-apagar"].click();
+    assert.equal(expression(), "3+sin7");
+    el["calc-limpar"].click();
+    assert.equal(expression(), "");
+  }
 });
-
-test("desktop keeps native typing, Enter/Esc handlers and physical focus", () => {
-  const {elems, inserts, expression} = launch(false);
-  assert.equal(expression.readOnly, false);
-  assert.equal(expression.inputMode, "text");
-  assert.equal(elems["calc-touch-tip"].hidden, true);
-  inserts[0].click();
-  assert.equal(expression.value, "3");
-  assert.ok(expression.focusCount > 0);
-  assert.equal(typeof expression.listeners.keydown, "function");
+test("desktop physical keyboard edits virtual expression without an input element", () => {
+  const app = launch(false);
+  function key(value, target = {tagName:"DIV"}) {
+    let prevented = false;
+    app.docHandlers.keydown({key:value,target,ctrlKey:false,metaKey:false,altKey:false,
+      preventDefault: () => {prevented=true;}});
+    return prevented;
+  }
+  assert.equal(key("9"), true);
+  assert.equal(key("^"), true);
+  assert.equal(key("2"), true);
+  assert.equal(app.expression(), "9^2");
+  assert.equal(key("Backspace"), true);
+  assert.equal(app.expression(), "9^");
+  assert.equal(key("3",{tagName:"INPUT"}), false);
+  assert.equal(app.expression(), "9^");
+  app.el.calculadora.hidden = true;
+  assert.equal(key("4"), false);
+  assert.equal(app.expression(), "9^");
 });
