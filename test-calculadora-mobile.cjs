@@ -3,6 +3,9 @@ const test = require("node:test");
 const assert = require("node:assert/strict");
 const fs = require("node:fs");
 const vm = require("node:vm");
+const { randomUUID } = require("node:crypto");
+const calc = require("./calculadora-core.js");
+const CalcHistory = require("./historico-core.js");
 const script = fs.readFileSync(require.resolve("./calculadora.js"), "utf8");
 const html = fs.readFileSync(require.resolve("./index.html"), "utf8");
 
@@ -25,7 +28,7 @@ function launch(touch) {
     "calc-apagar-historico", "calc-cursor-left", "calc-cursor-right", "calculadora"];
   const el = Object.fromEntries(ids.map(id => [id, new Fake()]));
   el["calc-angulo"].value = "deg";
-  const btns = ["3", "+", "7", "sin("].map(v => {
+  const btns = ["3", "+", "7", "sin(", "ans"].map(v => {
     const b = new Fake("BUTTON"); b.dataset.calcInsert = v; return b;
   });
   const docHandlers = {};
@@ -36,17 +39,18 @@ function launch(touch) {
     createTextNode: text => ({textContent: text}),
     addEventListener: (name, fn) => { docHandlers[name] = fn; }
   };
-  const fakeHistory = { KEY: "test-calc", MAX: 80, normalize: () => ({entries: []}) };
-  const calc = { evaluate: () => 10, format: n => String(n) };
-  const win = { EletronicaCalc: calc, addEventListener() {} };
+  const stored = new Map();
+  const events = {};
+  const win = { EletronicaCalc: calc, addEventListener: (name, fn) => { events[name] = fn; } };
   vm.runInNewContext(script, {
     document, window: win, navigator: {maxTouchPoints: touch ? 5 : 0},
     matchMedia: () => ({matches: touch}), EletronicaCalc: calc,
-    CalcHistory: fakeHistory, localStorage: {getItem: () => null}, console
+    CalcHistory, crypto: {randomUUID}, console,
+    localStorage: {getItem: key => stored.get(key), setItem: (key, value) => stored.set(key, value)}
   });
   const expression = () => el["calc-expressao"].children
     .filter(child => typeof child.textContent === "string").map(child => child.textContent).join("");
-  return {el, btns, docHandlers, expression};
+  return {el, btns, docHandlers, expression, stored, events};
 }
 test("calculator markup has no editable input or contenteditable display", () => {
   const markup = html.match(/<div id="calc-expressao"[\s\S]*?<\/div>/)?.[0];
@@ -89,4 +93,22 @@ test("desktop physical keyboard edits virtual expression without an input elemen
   app.el.calculadora.hidden = true;
   assert.equal(key("4"), false);
   assert.equal(app.expression(), "9^");
+});
+
+test("Ans keeps the last local result when a newer cloud history entry arrives", () => {
+  const {el, btns, stored, events} = launch(true);
+  btns[0].click(); btns[1].click(); btns[2].click();
+  el["calc-calcular"].click();
+  assert.equal(el["calc-resultado"].textContent, "10");
+  const {KEY} = CalcHistory;
+  const history = JSON.parse(stored.get(KEY));
+  history.entries.push({id:"remote", expr:"99", result:99, mode:"deg",
+    at:new Date(Date.now() + 60000).toISOString()});
+  stored.set(KEY, JSON.stringify(history));
+  events["cloud:applied"]({detail:{keys:[KEY]}});
+  el["calc-limpar"].click();
+  btns[4].click(); btns[1].click(); btns[0].click();
+  el["calc-calcular"].click();
+  assert.equal(el["calc-resultado"].textContent, "13");
+  assert.ok(JSON.parse(stored.get(KEY)).entries.some(row => row.expr === "(10)+3"));
 });

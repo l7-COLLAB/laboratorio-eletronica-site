@@ -41,15 +41,8 @@
     return -1;
   }
 
-  function unlockLimit(stages, passed) {
-    if (!stages.length) return -1;
-    // Historical releases placed M03 and M06 before M00. A learner who
-    // finished them must keep access to the next canonical module.
-    return Math.min(stages.length - 1, highestCompletedIndex(stages, passed) + 1);
-  }
-
-  function canOpen(stages, passed, index) {
-    return Number.isInteger(index) && index >= 0 && index <= unlockLimit(stages, passed);
+  function canOpen(stages, index) {
+    return Number.isInteger(index) && index >= 0 && index < stages.length;
   }
 
   function nextRecommended(stages, passed) {
@@ -61,7 +54,7 @@
   }
 
   const api = Object.freeze({ recoverPassed, completedIds, completedCount, completed,
-    highestCompletedIndex, unlockLimit, canOpen, nextRecommended });
+    highestCompletedIndex, canOpen, nextRecommended });
   root.TrailProgress = api;
   if (typeof module === "object" && module.exports) module.exports = api;
 })(globalThis);

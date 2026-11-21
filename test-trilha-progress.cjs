@@ -23,37 +23,19 @@ test("etapas ficam na ordem curricular correta, sem alterações de conteúdo", 
   }
 });
 
-test("novo aluno começa em M00, sem desbloquear módulos futuros", () => {
+test("todas as etapas abrem sem progresso, inclusive em um navegador novo", () => {
   assert.equal(Progress.completedCount(stages, []), 0);
   assert.equal(Progress.nextRecommended(stages, []), 0);
-  assert.equal(Progress.canOpen(stages, [], 0), true);
-  assert.equal(Progress.canOpen(stages, [], 1), false);
+  for (const index of stages.keys()) assert.equal(Progress.canOpen(stages, index), true);
+  for (const invalid of [-1, stages.length, 0.5, "1"]) {
+    assert.equal(Progress.canOpen(stages, invalid), false);
+  }
 });
 
-test("quem concluiu M03 na versão antiga recebe M04 como próximo módulo", () => {
-  const done = ["M03"];
-  assert.equal(Progress.completedCount(stages, done), 1);
-  assert.equal(Progress.nextRecommended(stages, done), 4);
-  assert.equal(Progress.completed(stages, done, "M03"), true);
-  assert.equal(Progress.canOpen(stages, done, 4), true);
-  assert.equal(Progress.canOpen(stages, done, 5), false);
-  assert.equal(Progress.canOpen(stages, done, 0), true);
-});
-
-test("quem concluiu M03 e M06 mantém ambos e acesso ao próximo", () => {
-  const done = ["M03", "M06"];
-  assert.equal(Progress.completedCount(stages, done), 2);
-  assert.equal(Progress.canOpen(stages, done, 7), true);
-  assert.equal(Progress.canOpen(stages, done, 8), false);
-  assert.equal(Progress.nextRecommended(stages, done), 7);
-  assert.equal(Progress.completed(stages, done, "M00"), false);
-});
-
-test("progresso sequencial normal libera somente o próximo módulo", () => {
-  const done = ["M00", "M01", "M02"];
-  assert.equal(Progress.nextRecommended(stages, done), 3);
-  assert.equal(Progress.canOpen(stages, done, 3), true);
-  assert.equal(Progress.canOpen(stages, done, 4), false);
+test("conclusões legadas e sequenciais seguem orientando a recomendação", () => {
+  assert.equal(Progress.nextRecommended(stages, ["M03"]), 4);
+  assert.equal(Progress.nextRecommended(stages, ["M03", "M06"]), 7);
+  assert.equal(Progress.nextRecommended(stages, ["M00", "M01", "M02"]), 3);
 });
 
 test("3/3 já registrado recupera conclusão perdida, sem inferir a partir de quiz incompleto", () => {
@@ -66,8 +48,6 @@ test("3/3 já registrado recupera conclusão perdida, sem inferir a partir de qu
   const restored = Progress.recoverPassed(stages, prior, attempts);
   assert.deepEqual(restored, ["M00", "M03"]);
   assert.deepEqual(prior, ["M00"]);
-  assert.equal(Progress.canOpen(stages, restored, 4), true);
-  assert.equal(Progress.canOpen(stages, restored, 7), false);
   assert.deepEqual(Progress.recoverPassed(stages, restored, attempts), restored);
 });
 
@@ -90,13 +70,13 @@ test("ao completar toda a trilha, recomenda etapa faltante ou encerra", () => {
   assert.equal(Progress.completedCount(stages, expected), 24);
   const missing = expected.filter(x => x !== "M05");
   assert.equal(Progress.nextRecommended(stages, missing), 5);
-  assert.equal(Progress.canOpen(stages, missing, 5), true);
+  assert.equal(Progress.canOpen(stages, 5), true);
 });
 
-test("UI usa reconhecimento por ID para corrigir e liberar etapas", () => {
+test("UI abre qualquer etapa e registra conclusões por ID", () => {
   const source = fs.readFileSync(require.resolve("./trilha.js"), "utf8");
-  assert.match(source, /button\.disabled = !canOpen\(index\)/);
+  assert.match(source, /button\.addEventListener\("click", \(\) => switchStage\(index\)\)/);
   assert.match(source, /const alreadyPassed = isComplete\(stage\.id\)/);
-  assert.match(source, /const newCompletion = passedNow && !isComplete\(stage\.id\) && canOpen\(selected\)/);
+  assert.match(source, /const newCompletion = passedNow && !isComplete\(stage\.id\)/);
   assert.match(source, /const count = TrailProgress\.completedCount/);
 });

@@ -17,7 +17,7 @@
   // The old dataset started at M03/M06. Keep those completions while
   // progressing through the corrected M00–M13, S01–S10 ordering.
   const firstOpen = () => TrailProgress.nextRecommended(etapas, progress.passed);
-  const canOpen = index => TrailProgress.canOpen(etapas, progress.passed, index);
+  const canOpen = index => TrailProgress.canOpen(etapas, index);
   const isComplete = id => TrailProgress.completed(etapas, progress.passed, id);
   let selected = Learning.resume(progress.resume, etapas, canOpen)?.index ?? Math.min(firstOpen(), etapas.length - 1);
   let attempt = 0;
@@ -84,7 +84,6 @@
   function switchStage(index) {
     if (!canOpen(index)) return;
     goToView("trilha");
-    get("acesso-etapa").textContent = "";
     selected = index;
     progress.resume = {id: etapas[index].id, phase:"teoria", at:Date.now()};
     persist();
@@ -111,9 +110,8 @@
       name.prepend(element("span", stage.id, "stage-code"), " ");
       button.append(name);
       button.type = "button";
-      button.disabled = !canOpen(index);
       if (index === selected) button.setAttribute("aria-current", "step");
-      button.append(element("small", passed ? "Concluída" : button.disabled ? "Bloqueada" : "Disponível"));
+      button.append(element("small", passed ? "Concluída" : "Disponível"));
       button.addEventListener("click", () => switchStage(index));
       group.append(button);
     });
@@ -132,16 +130,14 @@
     return button;
   }
 
-  function answerKey(stage, answers, passed) {
+  function answerKey(stage, answers) {
     const details = element("details", "", "quiz-key");
     const heading = element("summary", "Ver gabarito comentado");
     heading.append(element("span", "", "quiz-score"));
     const score = answers?.filter((answer, index) => answer === stage.quiz[index][1]).length;
     if (answers) heading.querySelector(".quiz-score").textContent = " · " + score + "/" + stage.quiz.length;
     if (answers && score < stage.quiz.length) {
-      details.append(heading, element("p", passed
-        ? "Revise o raciocínio das questões que errou nesta tentativa."
-        : "A próxima etapa será liberada quando você acertar as três questões."));
+      details.append(heading, element("p", "Revise o raciocínio das questões que errou nesta tentativa."));
     } else {
       details.append(heading);
     }
@@ -258,7 +254,7 @@
     const announcement = element("p");
     announcement.setAttribute("role", "status");
     const last = progress.attempts[stage.id];
-    if (last || alreadyPassed) result.append(answerKey(stage, last, alreadyPassed));
+    if (last || alreadyPassed) result.append(answerKey(stage, last));
     const submit = action("Corrigir respostas", true);
     submit.type = "submit";
     const onward = action("Abrir próxima etapa", true);
@@ -305,14 +301,14 @@
     });
     quiz.addEventListener("submit", event => {
       event.preventDefault();
-      if (graded || !checked.checked || !hasPracticeAnswer() || resolution.hidden || !canOpen(selected)) return;
+      if (graded || !checked.checked || !hasPracticeAnswer() || resolution.hidden) return;
       const responses = new FormData(quiz);
       const answers = stage.quiz.map((_, index) => responses.get("q" + index));
       if (answers.some((answer, index) => !stage.quiz[index].slice(1, 5).includes(answer))) return;
       graded = true;
       const score = answers.filter((answer, index) => answer === stage.quiz[index][1]).length;
       const passedNow = score === stage.quiz.length;
-      const newCompletion = passedNow && !isComplete(stage.id) && canOpen(selected);
+      const newCompletion = passedNow && !isComplete(stage.id);
       if (newCompletion) {
         progress.passed.push(stage.id);
         progress.reviews[stage.id] = { round: 0, due: today() + reviewGaps[0] };
@@ -330,11 +326,11 @@
         updateGoal();
       }
       const hasNext = selected + 1 < etapas.length;
-      const key = answerKey(stage, answers, alreadyPassed || passedNow);
+      const key = answerKey(stage, answers);
       key.open = true;
       result.replaceChildren(key);
       announcement.textContent = score + "/" + stage.quiz.length + ". " + (passedNow
-        ? hasNext ? "Próxima etapa disponível." : "Trilha guiada concluída."
+        ? "Etapa concluída."
         : "Veja o gabarito comentado e tente novamente.");
       quiz.hidden = true;
       if (passedNow) {
@@ -379,12 +375,12 @@
         progress.resume={id:stage.id,phase,at:Date.now()};persist();target.scrollIntoView({block:"start"});
       });navigation.append(button);
     }
-    const prerequisite=element("p",selected?"Pré-requisito curricular: "+etapas[selected-1].id+". Conclusões legadas mantêm o acesso já conquistado.":"Pré-requisito: nenhum. Comece pelo método de estudo.","lesson-prerequisite");
     if (!diagramEditor && !numericEditor)
       practice.append(element("p","Esta prática discursiva é de autoavaliação. A correção automática da etapa acontece no quiz.","study-note"));
     if (diagramEditor)
       practice.append(element("p","Use Corrigir atividade para conferir os campos objetivos. Justificativas e propostas precisam ser comparadas com a resolução.","study-note"));
-    activity.replaceChildren(status, title, element("p", stage.goal), prerequisite,navigation,theory,
+    window.dismissMathKeyboard?.();
+    activity.replaceChildren(status, title, element("p", stage.goal), navigation, theory,
       block("Curiosidade aplicada", stage.curiosity), practice, quiz, announcement, result, onward,
       noteEditor(stageCategory(stage.id)));
     activity.append(renderStudyResources("modules", stage.id));
@@ -433,14 +429,7 @@
     const reference = event.target.closest("[data-study-stage]");
     if (!reference) return;
     const index = etapas.findIndex(stage => stage.id === reference.dataset.studyStage);
-    if (index < 0) return;
-    const message = get("acesso-etapa");
-    if (canOpen(index)) {
-      message.textContent = "";
-      switchStage(index);
-    } else {
-      message.textContent = etapas[index].id + " está bloqueada. Conclua as etapas anteriores para abrir este módulo.";
-    }
+    switchStage(index);
   });
 
   window.addEventListener("cloud:applied", event => {
@@ -465,12 +454,7 @@
     const hasDraft = MathPractice.hasAnswer(practiceInput?.value, mathHost?.dataset.latex, drawingHost?.dataset.drawing) ||
       Boolean(get("atividade").querySelector("[data-triangle-exercise]")) ||
       structuredHost?.dataset.hasDraft === "true";
-    const selectionWasLocked = !canOpen(selected);
-    if (selectionWasLocked) selected = Math.min(firstOpen(), etapas.length - 1);
-    if (!hasDraft || selectionWasLocked) {
-      if (!selectionWasLocked) selected = Math.min(firstOpen(), etapas.length - 1);
-      renderActivity();
-    }
+    if (!hasDraft) renderActivity();
     get("tempo-meta").value = String(progress.minutes);
     updateStatus();
     updateGoal();

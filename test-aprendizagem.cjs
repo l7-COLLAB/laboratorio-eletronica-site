@@ -2,10 +2,11 @@ const {test}=require('node:test');const assert=require('node:assert/strict');
 const Learning=require('./aprendizagem-core.js');const Sync=require('./progresso-sync-core.js');
 const fs=require('node:fs'),vm=require('node:vm'),ctx={};vm.createContext(ctx);vm.runInContext(fs.readFileSync('trilha-dados.js','utf8')+';this.stages=etapas;',ctx);
 const stages=ctx.stages,stage=stages[3];
-test('retomada respeita IDs e bloqueios legados',()=>{
- const P=require('./trilha-progress-core.js'),can=i=>P.canOpen(stages,['M03'],i);
+test('retomada aceita IDs válidos de qualquer módulo',()=>{
+ const P=require('./trilha-progress-core.js'),can=i=>P.canOpen(stages,i);
  assert.deepEqual(Learning.resume({id:'M04',phase:'quiz'},stages,can),{index:4,phase:'quiz'});
- assert.equal(Learning.resume({id:'M10',phase:'quiz'},stages,can),null);
+ assert.deepEqual(Learning.resume({id:'M10',phase:'quiz'},stages,can),{index:10,phase:'quiz'});
+ assert.equal(Learning.resume({id:'M99',phase:'quiz'},stages,can),null);
  assert.equal(Learning.resume({id:'M03',phase:'inventada'},stages,can),null);
 });
 test('indicadores dependem de quiz e revisão, sem domínio fabricado',()=>{

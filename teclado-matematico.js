@@ -5,6 +5,19 @@
   // operating system's text keyboard. The text explanation remains optional.
   const mathLiveURL = "https://cdn.jsdelivr.net/npm/mathlive@0.111.4/mathlive.min.js";
   let libraryPromise;
+  let keyboardConfigured = false;
+
+  function hideKeyboard() {
+    const keyboard = window.mathVirtualKeyboard;
+    if (keyboard?.visible) keyboard.hide();
+  }
+
+  document.addEventListener("focusin", event => {
+    if (event.target.matches("input, textarea, select, [contenteditable='true']")) hideKeyboard();
+  });
+  window.addEventListener("study:view", event => {
+    if (event.detail.id !== "trilha") hideKeyboard();
+  });
 
   function loadMathLive() {
     if (customElements.get("math-field")) return Promise.resolve();
@@ -35,7 +48,7 @@
 
   function isTouchDevice() {
     return (typeof matchMedia === "function" && matchMedia("(pointer: coarse)").matches) ||
-      (typeof navigator !== "undefined" && navigator.maxTouchPoints > 0);
+      navigator.maxTouchPoints > 0 || /iPhone|iPad|iPod/.test(navigator.userAgent ?? "");
   }
 
   const shortcuts = [
@@ -53,9 +66,6 @@
     let requestedFocus = false;
     let readyPromise = null;
     let opened = false;
-    // MathLive rebuilds its virtual keyboard when layouts are assigned.
-    // Do not reset the user's alphabetic/symbolic selection on every focus.
-    let keyboardConfigured = false;
 
     host.dataset.mathEditor = "true";
     host.dataset.latex = latex;
@@ -85,13 +95,12 @@
 
     host.append(title, help, placeholder, content, status);
 
-    function mathKeyboard() { return window.mathVirtualKeyboard; }
-
-    function showKeyboard() {
-      if (!field || !isTouchDevice()) return;
-      const keyboard = mathKeyboard();
+    function showKeyboard({ force = false } = {}) {
+      if (!field || (!force && !isTouchDevice())) return;
+      const keyboard = window.mathVirtualKeyboard;
       if (!keyboard) return;
       try {
+        // Layouts belong to the shared keyboard. Assigning them rebuilds it.
         if (!keyboardConfigured) {
           keyboard.layouts = ["numeric", "symbols", "alphabetic", "greek"];
           keyboardConfigured = true;
@@ -100,10 +109,6 @@
       } catch {
         // MathLive still handles the keyboard automatically on mobile.
       }
-    }
-
-    function hideKeyboard() {
-      try { mathKeyboard()?.hide(); } catch {}
     }
 
     function record() {
@@ -156,7 +161,11 @@
       field.setAttribute("math-virtual-keyboard-policy", isTouchDevice() ? "manual" : "auto");
       field.setAttribute("placeholder", "?");
       field.addEventListener("input", record);
-      field.addEventListener("focusin", showKeyboard);
+      field.addEventListener("focusin", () => showKeyboard());
+      field.addEventListener("click", event => {
+        if (event.composedPath().some(node => node.getAttribute?.("part") === "virtual-keyboard-toggle")) return;
+        showKeyboard();
+      });
 
       const shortcutsRow = createShortcutButtons();
       const actions = document.createElement("div");
@@ -168,7 +177,7 @@
       toggle.textContent = "Mostrar teclado";
       toggle.addEventListener("click", () => {
         field.focus({ preventScroll: true });
-        showKeyboard();
+        showKeyboard({ force: true });
       });
       const done = document.createElement("button");
       done.type = "button";
@@ -228,4 +237,5 @@
   }
 
   window.createMathEditor = createMathEditor;
+  window.dismissMathKeyboard = hideKeyboard;
 })();

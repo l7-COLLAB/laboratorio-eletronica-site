@@ -6,7 +6,7 @@
     const p = readLocal(key, {});
     p.passed = TrailProgress.recoverPassed(etapas,p.passed,p.attempts);
     const day = (()=>{const d=new Date();return Date.UTC(d.getFullYear(),d.getMonth(),d.getDate())/86400000;})();
-    const canOpen = i=>TrailProgress.canOpen(etapas,p.passed,i);
+    const canOpen = i=>TrailProgress.canOpen(etapas,i);
     const saved = Learning.resume(p.resume,etapas,canOpen);
     const next = etapas[saved?.index ?? TrailProgress.nextRecommended(etapas,p.passed)];
     const count = TrailProgress.completedCount(etapas,p.passed);

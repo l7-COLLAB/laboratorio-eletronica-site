@@ -59,14 +59,14 @@ Os widgets novos usam `drafts[id].diagram` e a sanitização já existente; não
 - Os exercícios de conteúdo matemático possuem um botão "Abrir teclado matemático", que carrega MathLive 0.111.4 sob demanda.
 - O teclado permite frações, frações aninhadas, potências, expoentes fracionários, raízes, operações, parênteses e símbolos de eletrônica. O teclado físico também funciona.
 - A resposta discursiva pode incluir texto e uma expressão em LaTeX. Os rascunhos ficam em \`laboratorio-eletronica:trilha:v1\`, no campo opcional \`drafts\`, preservando \`passed\`, \`attempts\`, \`reviews\` e todos os dados anteriores.
-- As perguntas de múltipla escolha, correção e desbloqueio permanecem inalterados. Não é realizada correção algébrica automática de respostas discursivas.
+- As respostas discursivas são avaliadas por comparação com a resolução. Não é realizada correção algébrica automática de respostas discursivas.
 - Se a biblioteca externa não carregar, o campo convencional de texto permanece disponível.
 - Para testar: \`node --test test-calculadora.cjs test-sync.cjs test-worker.mjs test-teclado-matematico.cjs\`.
 - Depois da publicação, confirmar as interações no Safari do iPhone 11 (retrato e paisagem) e validar a sincronização com uma conta de teste antes de utilizar com dados reais.
 
-## Sequência e desbloqueio dos módulos (correção 2026-11-15)
+## Acesso aos módulos e registro de conclusão
 
-- Ordem curricular obrigatória: M00 a M13, seguida de S01 a S10.
+- Todos os módulos M00 a M13 e desafios S01 a S10 podem ser abertos pelo menu Meu curso, mesmo sem progresso salvo. A lista segue a ordem curricular.
 - A versão anterior inseria M03 e M06 antes de M00. A correção ordena os módulos sem apagar as conclusões já salvas.
 - Para estudantes com progresso na ordem antiga, o próximo módulo após M03 é M04; módulos previamente concluídos continuam acessíveis.
 - O progresso é identificado por ID de módulo, não pela posição na lista, e o contador mostra quantos IDs válidos foram concluídos.

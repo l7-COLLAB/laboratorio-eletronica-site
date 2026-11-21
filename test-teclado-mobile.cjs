@@ -58,9 +58,9 @@ function walk(element) {
   return [element, ...element.children.flatMap(walk)];
 }
 
-async function setup(touch) {
+async function setup(touch, userAgent = "") {
   const root = new FakeElement("div");
-  const window = { mathVirtualKeyboard: {
+  const window = { addEventListener() {}, mathVirtualKeyboard: {
     visible: false, _layouts: [], layoutAssignments: 0, currentLayout: "",
     showCount: 0, hideCount: 0,
     set layouts(value) {
@@ -73,11 +73,12 @@ async function setup(touch) {
     show() { this.showCount++; this.visible = true; },
     hide() { this.hideCount++; this.visible = false; }
   }};
-  const document = { createElement: tag => new FakeElement(tag), head: new FakeElement("head") };
+  const handlers = {};
+  const document = { addEventListener: (name, fn) => { handlers[name] = fn; }, createElement: tag => new FakeElement(tag), head: new FakeElement("head") };
   let saved = 0;
   const sandbox = {
     window, document,
-    navigator: { maxTouchPoints: touch ? 5 : 0 },
+    navigator: { maxTouchPoints: touch ? 5 : 0, userAgent },
     matchMedia: () => ({ matches: touch }),
     customElements: { get: name => name === "math-field" ? FakeElement : undefined },
     MathPractice: { MAX_LATEX: 800 },
@@ -86,7 +87,7 @@ async function setup(touch) {
   vm.runInNewContext(script, sandbox);
   const editor = window.createMathEditor(root, { initialLatex: "\\frac{1}{2}", onChange() { saved++; } });
   await new Promise(resolve => setImmediate(resolve));
-  return {root, window, editor, get saved() { return saved; }};
+  return {root, window, editor, handlers, get saved() { return saved; }};
 }
 
 test("campo matemático já aparece sem clicar em botão opcional", async () => {
@@ -166,4 +167,21 @@ test("botões do teclado matemático são grandes o bastante para toque", () => 
   assert.match(stylesheet, /\.math-editor-shortcut\s*\{[\s\S]*?min-height:\s*46px;/);
   assert.match(stylesheet, /max-width:\s*430px/);
   assert.match(stylesheet, /orientation:\s*landscape/);
+});
+
+test("iPhone sem detecção de toque abre o teclado e fecha ao focar a explicação", async () => {
+  const app = await setup(false, "Mozilla/5.0 (iPhone)");
+  const field = walk(app.root).find(el => el.tagName === "math-field");
+  field.focus();
+  assert.equal(app.window.mathVirtualKeyboard.visible, true);
+  app.handlers.focusin({target: {matches: selector => selector.includes("textarea")}});
+  assert.equal(app.window.mathVirtualKeyboard.visible, false);
+  field.click();
+  assert.equal(app.window.mathVirtualKeyboard.visible, true);
+});
+
+test("botão Mostrar teclado também funciona no desktop", async () => {
+  const app = await setup(false);
+  walk(app.root).find(el => el.className === "button math-editor-show").click();
+  assert.equal(app.window.mathVirtualKeyboard.visible, true);
 });

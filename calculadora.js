@@ -48,7 +48,7 @@
     display.setAttribute("aria-label", "Expressão: " + (field.value || "vazia"));
   }
   paint();
-  let last = 0;
+  let last;
   function state() {
     try { return CalcHistory.normalize(JSON.parse(localStorage.getItem(KEY) || '{}')); }
     catch { return CalcHistory.normalize({}); }
@@ -70,7 +70,6 @@
     const rows = history();
     list.replaceChildren();
     $('calc-total').textContent = rows.length + ' de ' + MAX + ' cálculos mantidos';
-    last = rows[0]?.result ?? 0;
     if (!rows.length) { const p = document.createElement('p'); p.textContent='Nenhum cálculo registrado.'; list.append(p); }
     for (const row of rows) {
       const li = document.createElement('li'), button = document.createElement('button'), small = document.createElement('small');
@@ -88,13 +87,17 @@
   $('calc-calcular').addEventListener('click', () => {
     try {
       const expr = field.value.trim(), unit=mode.value;
-      const value=EletronicaCalc.evaluate(expr,unit,last);
-      result.textContent=EletronicaCalc.format(value);
-      const at = new Date(Math.max(Date.now(), (Date.parse(state().clear) || 0) + 1)).toISOString();
-      const expanded = expr.replace(/\bans\b/gi, '(' + String(last) + ')');
+      const historyState = state();
+      const previous = last ?? historyState.entries[0]?.result ?? 0;
+      const expanded = expr.replace(/\bans\b/gi, '(' + String(previous) + ')');
       if (expanded.length > 180) throw Error('A expressão expandida com Ans ultrapassa 180 caracteres. Use o resultado numérico para continuar.');
+      const value = EletronicaCalc.evaluate(expr, unit, previous);
+      const at = new Date(Math.max(Date.now(), (Date.parse(historyState.clear) || 0) + 1)).toISOString();
+      const entry = {id: crypto.randomUUID(), expr: expanded, result: value, at, mode: unit};
       last = value;
-      save(current => CalcHistory.merge(current, {clear: current.clear, entries: [{id: crypto.randomUUID(), expr: expanded, result: value, at, mode: unit}]}));
+      result.textContent = EletronicaCalc.format(value);
+      status.textContent = '';
+      save(current => CalcHistory.merge(current, {clear: current.clear, entries: [entry]}));
     } catch(error) { result.textContent='Erro';status.textContent=error.message; }
   });
   $('calc-limpar').addEventListener('click', () => {field.value='';result.textContent='0';status.textContent='';});
@@ -103,7 +106,7 @@
     field.setRangeText('',a===b?Math.max(0,a-1):a,b);
   });
   $('calc-apagar-historico').addEventListener('click', () => {
-    if (confirm('Apagar o histórico deste aparelho e da nuvem? Após sincronizar, as contas anteriores também serão removidas nos outros aparelhos.')) { save(() => ({clear: new Date().toISOString(), entries: []})); result.textContent='0'; }
+    if (confirm('Apagar o histórico deste aparelho e da nuvem? Após sincronizar, as contas anteriores também serão removidas nos outros aparelhos.')) { last = 0; save(() => ({clear: new Date().toISOString(), entries: []})); result.textContent='0'; }
   });
   $("calc-cursor-left").addEventListener("click", () =>
     field.setSelectionRange(Math.max(0, field.selectionStart - 1), Math.max(0, field.selectionStart - 1)));
