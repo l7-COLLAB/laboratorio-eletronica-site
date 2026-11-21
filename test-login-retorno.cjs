@@ -42,7 +42,9 @@ function launch(server,{hash="",local={},token=""}={}) {
    return {
      id,hidden:false,textContent:"",value:"",handlers:events,
      addEventListener(type,handler){events[type]=handler},
-     append(){},replaceChildren(){},
+     children:[],
+     append(...children){this.children.push(...children)},
+     replaceChildren(...children){this.children=children},
      querySelector(selector){
        if(selector==="[name=\"username\"]")return {value:"fixture"};
        if(selector==="[name=\"password\"]")return {value:"test-password"};
@@ -79,7 +81,7 @@ function launch(server,{hash="",local={},token=""}={}) {
    StudyProgressSync:Core,
    CustomEvent:class{constructor(type,options){this.type=type;this.detail=options.detail}},
    fetch:server.fetch.bind(server),
-   get,element:(_tag,text)=>({textContent:text||"",append(){},addEventListener(){},replaceChildren(){},setAttribute(){}}),
+   get,element:(tag,text)=>Object.assign(makeNode(tag),{textContent:text||""}),
    setTimeout:()=>0,clearTimeout(){},console,
  };
  vm.runInNewContext(fs.readFileSync("nuvem.js","utf8"),context);
@@ -129,3 +131,21 @@ test("sair da conta mostra login novamente sem apagar progresso local ou remoto"
  assert.deepEqual(JSON.parse(app.local.get(key)).passed,["M03"]);
  assert.deepEqual(JSON.parse(server.stored.get(key).value).passed,["M03"]);
 });
+
+for (const useCloud of [true, false]) {
+ test("conflito de progresso preserva os módulos concluídos ao escolher " + (useCloud ? "nuvem" : "aparelho"), async () => {
+   const note = device => ({M04:{text:"Rascunho " + device,latex:"",drawing:"",diagram:""}});
+   const server = remoteState(JSON.stringify({...JSON.parse(progress(["M01","M03"])),drafts:note("da nuvem")}));
+   const local = JSON.stringify({...JSON.parse(progress(["M04"])),drafts:note("do aparelho")});
+   const app = launch(server,{local:{[key]:local}});
+   await app.login();
+   const conflict = app.get("nuvem-conflitos").children[0];
+   const title = useCloud ? "Usar a versão da nuvem" : "Manter minha edição";
+   await conflict.children.find(node=>node.textContent===title).handlers.click();
+   assert.equal(app.get("nuvem-conflitos").children.length,0);
+   const saved = JSON.parse(server.stored.get(key).value);
+   assert.deepEqual(new Set(saved.passed),new Set(["M01","M03","M04"]));
+   assert.deepEqual(saved.drafts,note(useCloud ? "da nuvem" : "do aparelho"));
+   assert.deepEqual(JSON.parse(app.local.get(key)),saved);
+ });
+}

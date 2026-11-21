@@ -309,7 +309,9 @@ window.cloudSync = (() => {
       const section = element("section", "", "cloud-conflict");
       const local = state.pending[key]?.value ?? localStorage.getItem(key) ?? "";
       section.append(element("h3", labelFor(key)),
-        element("p", "Este aparelho e a nuvem têm versões diferentes. Escolha qual continuar usando."));
+        element("p", key === progressKey
+          ? "Escolha quais respostas manter. As etapas concluídas nas duas versões serão preservadas."
+          : "Este aparelho e a nuvem têm versões diferentes. Escolha qual continuar usando."));
       for (const [title, text] of [["Neste aparelho", local], ["Na nuvem", remote.value]]) {
         const details = element("details");
         const field = element("textarea");
@@ -320,21 +322,33 @@ window.cloudSync = (() => {
       }
       function resolve(useLocal) {
         if (busy) return;
+        const deviceValue = localStorage.getItem(key) ?? local;
+        const chosen = useLocal ? deviceValue : remote.value;
+        let value = chosen;
+        if (key === progressKey) {
+          try {
+            const selected = JSON.parse(chosen || "null");
+            const other = JSON.parse((useLocal ? remote.value : deviceValue) || "null");
+            const merged = StudyProgressSync.preserveCompletions(selected ?? other, other);
+            if (merged && merged !== selected) value = JSON.stringify(merged);
+          } catch {
+            return status("Não foi possível combinar o progresso. As duas versões continuam disponíveis.");
+          }
+        }
+        const apply = !useLocal || value !== chosen;
+        if (apply && !applyValue(key, value)) return;
         state.base[key] = remote.revision;
         state.seen[key] = remote.value;
-        if (useLocal) {
-          state.pending[key] = {value: localStorage.getItem(key) ?? local,
-            revision: remote.revision, id: crypto.randomUUID()};
-        } else if (applyValue(key, remote.value)) {
-          delete state.pending[key];
-          publishChanges([key]);
+        if (useLocal || value !== remote.value) {
+          state.pending[key] = {value, revision: remote.revision, id: crypto.randomUUID()};
         } else {
-          return;
+          delete state.pending[key];
         }
         delete state.conflicts[key];
         storeState();
+        if (apply) publishChanges([key]);
         renderConflicts();
-        sync();
+        return sync();
       }
       const remoteButton = element("button", "Usar a versão da nuvem", "button");
       remoteButton.type = "button";

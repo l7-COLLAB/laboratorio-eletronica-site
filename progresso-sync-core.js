@@ -13,6 +13,14 @@
   function objectMap(value) {
     return plain(value) ? value : {};
   }
+  function preserveCompletions(selected, other) {
+    if (!Array.isArray(selected?.passed) || !Array.isArray(other?.passed)) return selected;
+    const completed = new Set(selected.passed);
+    const additional = other.passed.filter(id => typeof id === "string" && validId(id) && !completed.has(id));
+    if (!additional.length) return selected;
+    return {...selected, passed: [...new Set([...selected.passed, ...additional])]};
+  }
+
   function merge(local, remote, stages = []) {
     if (!plain(local) || !plain(remote) ||
         !Array.isArray(local.passed) || !Array.isArray(remote.passed)) return null;
@@ -92,7 +100,7 @@
       minutes, lastGoal: lastGoal.length ? Math.max(...lastGoal) : null
     };
   }
-  const api = Object.freeze({ merge });
+  const api = Object.freeze({ merge, preserveCompletions });
   root.StudyProgressSync = api;
   if (typeof module === "object" && module.exports) module.exports = api;
 })(globalThis);
